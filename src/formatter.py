@@ -10,12 +10,13 @@ import numpy as np
 from datetime import datetime
 from datetime import timedelta
 
+PATH='../data/processed/'
 
 def ds_unit_calc(day,time,satellite):
     day_string=day.strftime("%Y%m%d")
     print(day_string)
     d0=datetime(1993, 1, 1)
-    ds=xr.open_dataset('climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg.nc')
+    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg.nc')
     ds['Lat']=ds['Lat']+ds['lat'].min()
     ds['Lat']=ds['Lat'].astype(np.float32)
     ds['Lon']=ds['Lon']+ds['lon'].min()
