@@ -10,18 +10,17 @@ import numpy as np
 from datetime import datetime
 from datetime import timedelta
 
-PATH='../data/processed/'
+PATH='../data/raw/'
 
 def ds_unit_calc(day,time,satellite):
     day_string=day.strftime("%Y%m%d")
     print(day_string)
-    d0=datetime(1993, 1, 1)
-    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg.nc')
+    d0=datetime(1993, 1, 1)    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg.nc')
     ds['Lat']=ds['Lat']+ds['lat'].min()
     ds['Lat']=ds['Lat'].astype(np.float32)
     ds['Lon']=ds['Lon']+ds['lon'].min()
     ds['Lon']=ds['Lon'].astype(np.float32)
-    ds['plev']=np.sort(np.unique(ds['pressure'].values))
+    ds['plev']=np.around(np.sort(np.unique(ds['pressure'].values)),decimals=1)
     ds=ds.drop('lat')
     ds=ds.drop('lon')
     ds=ds.drop('pressure')
@@ -78,6 +77,7 @@ def main():
         else:       
             ds_total = xr.concat([ds_total, ds_unit], 'day')
     print(ds_total)
+    ds_total.to_netcdf('../data/processed/real_water_vapor.nc')
  
     
 if __name__=="__main__":
