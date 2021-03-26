@@ -15,10 +15,12 @@ import cv2
 def map_plotter(ds, title, label, units_label, vmin, vmax):
     values = np.squeeze(ds[label].values)
     values[values == 0] = np.nan
+    #values=values[:50,:]
     fig, ax = plt.subplots()
     if vmin == vmax:
-        im = ax.imshow(values, cmap='viridis', extent=[ds['lon'].min(
-        ), ds['lon'].max(), ds['lat'].min(), ds['lat'].max()])
+        #im = ax.imshow(values, cmap='viridis', extent=[ds['lon'].min(
+        #), ds['lon'].max(), ds['lat'].min(), ds['lat'].max()])
+        im = ax.imshow(values, cmap='viridis')
     else:
         im = ax.imshow(values, cmap='viridis', extent=[ds['lon'].min(
         ), ds['lon'].max(), ds['lat'].min(), ds['lat'].max()], vmin=vmin, vmax=vmax)
@@ -33,9 +35,10 @@ def map_plotter(ds, title, label, units_label, vmin, vmax):
     
     
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_inpainted.nc')
-    print(ds['pressure'].values)
-    ds_map=ds.loc[{'day':datetime(2020,7,1),'pressure':878.6,'satellite':'j1','time':'am'}]
+    ds=xr.open_dataset('../data/processed/real_water_vapor_0.nc')
+    print(ds['satellite'].values)
+    #print(ds)
+    ds_map=ds.loc[{'day':datetime(2020,7,1),'pressure':878.6,'satellite':'snpp','time':'am'}]
     map_plotter(ds_map, 'test', 'specific_humidity_mu', ' ', 0, 0)
     
 if __name__=="__main__":

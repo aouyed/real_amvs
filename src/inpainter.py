@@ -27,10 +27,11 @@ def main():
             for satellite in ds['satellite'].values:
                 for time in ds['time'].values:
                     frame= ds[label].loc[{'day':day ,'pressure':pressure,
-                                          'satellite':satellite,'time':time}].values         
+                                          'satellite':satellite,'time':time}].values       
                     frame = np.squeeze(frame)
                     frame[frame == 0] = np.nan
                     frame=drop_nan(frame)
+                    breakpoint()
                     ds[label].loc[{'day':day ,'pressure':pressure,
                              'satellite':satellite,'time':time}]=frame
     ds.to_netcdf('../data/processed/real_water_vapor_inpainted.nc')
