@@ -11,23 +11,34 @@ import numpy as np
 from datetime import datetime
 from datetime import timedelta
 
-PATH='../data/raw/'
+PATH='../data/raw/CLIMCAPS_winds/'
 label='specific_humidity_mu'
-labels=['specific_humidity_mu','specific_humidity_sigma','obs_time','pressure']
+labels=['specific_humidity_mean','specific_humidity_sdev']
 def regridder(ds):
-    latmax = ds['lat'].max().item()
-    latmin = ds['lat'].min().item()
-    lonmax = ds['lon'].max().item()
-    lonmin = ds['lon'].min().item()
+    latmax = ds['latitude'].max().item()
+    latmin = ds['latitude'].min().item()
+    lonmax = ds['longitude'].max().item()
+    lonmin = ds['longitude'].min().item()
 
     new_lat = np.arange(latmin, latmax+1, 1)
     new_lon = np.arange(lonmin, lonmax+1, 1)
+    
+    old_lon = np.arange(lonmin, lonmax, 2)
+    old_lat = np.arange(latmin, latmax+1, 0.5)
+    ds=ds.rename({'Lon':'lat','Lat':'lon'})
+    ds['lat']=ds['lat']/2+latmin
+    ds['lat']=ds['lat'].astype(np.float32)
+    ds['lon']=2*ds['lon']+lonmin
+    ds['lon']=ds['lon'].astype(np.float32)
+    print(ds)
 
     ds_out = xr.Dataset(
-           {'lat': (['lat'], new_lat), 'lon': ('lon', new_lon), })
-    regridder = xe.Regridder(ds[['lat','lon']].transpose(), ds_out, 'bilinear', reuse_weights=True)
-    ds=ds[labels].transpose('plev','Lat','Lon')
-    ds = regridder(ds)
+           {'lat': (['lat'], new_lat), 'lon': ('lon', new_lon)})
+   # regridder = xe.Regridder(ds[['lat','lon']], ds_out, 'bilinear', reuse_weights=True)
+    ds_t=ds[labels].transpose('plev','lat','lon')
+    #ds_r = regridder(ds_t[labels])
+    #ds_r['pressure']=(['plev'],ds['pressure'].values)
+   #ds_r['obs_time']=(['plev'],ds['pressure'].values)
     return ds
 
 def ds_unit_calc(day,time,satellite):
@@ -35,32 +46,31 @@ def ds_unit_calc(day,time,satellite):
     print(day_string)
     d0=datetime(1993, 1, 1)   
     
-    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg.nc')
+    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg_noqc.nc')
     
-    #ds=regridder(ds)   
+    ds=regridder(ds)   
     
-   
     
-    ds['Lat']=ds['Lat']+ds['lat'].min()
-    ds['Lat']=ds['Lat'].astype(np.float32)
-    ds['Lon']=ds['Lon']+ds['lon'].min()
-    ds['Lon']=ds['Lon'].astype(np.float32)
+   # ds['Lat']=ds['Lat']+ds['latitude'].min()
+   # ds['Lat']=ds['Lat'].astype(np.float32)
+   # ds['Lon']=ds['Lon']+ds['longitude'].min()
+   # ds['Lon']=ds['Lon'].astype(np.float32)
     ds['plev']=np.around(np.sort(np.unique(ds['pressure'].values)),decimals=1)
-    ds=ds.drop('lat')
-    ds=ds.drop('lon')
+    #ds=ds.drop('lat')
+    #ds=ds.drop('lon')
     ds=ds.drop('pressure')
-    dts=ds['obs_time'].values
+    #dts=ds['obs_time'].values
     
-    mask=np.isnan(dts)
-    dts=np.nan_to_num(dts)
-    helper = np.vectorize(lambda x: d0 + timedelta(seconds=x))
-    dt_sec=helper(dts)
-    dt_sec[mask]=np.nan
+    #mask=np.isnan(dts)
+    #dts=np.nan_to_num(dts)
+    #helper = np.vectorize(lambda x: d0 + timedelta(seconds=x))
+    #dt_sec=helper(dts)
+    #dt_sec[mask]=np.nan
     
     
-    ds['obs_time']=(['Lon','Lat'],dt_sec)
+    #ds['obs_time']=(['Lon','Lat'],dt_sec)
     
-    ds=ds.rename({'Lat':'lat','Lon':'lon','plev':'pressure'})
+    #ds=ds.rename({'Lat':'lat','Lon':'lon','plev':'pressure'})
     ds = ds.expand_dims('day').assign_coords(day=np.array([day]))
     ds = ds.expand_dims('time').assign_coords(time=np.array([time]))
     ds = ds.expand_dims('satellite').assign_coords(satellite=np.array([satellite]))
@@ -91,8 +101,10 @@ def time_loop(times, satellites, day):
 def main():
     times=['am','pm']
     satellites=['j1','snpp']
-    days=[datetime(2020,1,1),datetime(2020,1,2),datetime(2020,1,3),
-      datetime(2020,7,1),datetime(2020,7,2),datetime(2020,7,3)]
+       # days=[datetime(2020,1,1),datetime(2020,1,2),
+    #  datetime(2020,7,1),datetime(2020,7,3)]
+    days=[datetime(2020,7,3)]
+
     ds_total=xr.Dataset() 
     for day in days:    
         print(day)
@@ -103,7 +115,7 @@ def main():
             ds_total = xr.concat([ds_total, ds_unit], 'day')
     print(ds_total)
     #ds_total=ds_total.transpose()
-    ds_total.to_netcdf('../data/processed/real_water_vapor_0.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc.nc')
  
     
 if __name__=="__main__":
