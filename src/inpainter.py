@@ -17,24 +17,23 @@ def drop_nan(frame):
     return frame
 
 def main():
-    label='specific_humidity_mu'
-    ds=xr.open_dataset('../data/processed/real_water_vapor.nc')
+    label='specific_humidity_mean'
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc')
     print(ds)
     for day in ds['day'].values:
         print(day)
-        for pressure in ds['pressure'].values:
+        for pressure in ds['plev'].values:
             print(pressure)
             for satellite in ds['satellite'].values:
                 for time in ds['time'].values:
-                    frame= ds[label].loc[{'day':day ,'pressure':pressure,
+                    frame= ds[label].loc[{'day':day ,'plev':pressure,
                                           'satellite':satellite,'time':time}].values       
                     frame = np.squeeze(frame)
                     frame[frame == 0] = np.nan
                     frame=drop_nan(frame)
-                    breakpoint()
-                    ds[label].loc[{'day':day ,'pressure':pressure,
+                    ds[label].loc[{'day':day ,'plev':pressure,
                              'satellite':satellite,'time':time}]=frame
-    ds.to_netcdf('../data/processed/real_water_vapor_inpainted.nc')
+    ds.to_netcdf('../data/processed/real_water_vapor_noqc_inpainted.nc')
 
 
 

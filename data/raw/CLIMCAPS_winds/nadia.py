@@ -18,6 +18,7 @@ df=ds[['specific_humidity_mean','longitude','latitude']].to_dataframe()
 df=df.reset_index()
 df=df.set_index(['longitude','latitude','plev'])
 ds=xr.Dataset.from_dataframe(df)
+ds
 #df=df.reset_index(drop=True).set_index(['latitude','longitude'])
 #print(df)
 fig, ax = plt.subplots()
@@ -26,17 +27,24 @@ fig, ax = plt.subplots()
 proj=ccrs.PlateCarree()
 ax = plt.axes(projection=proj)
 ax.set_global()
-#gl = ax.gridlines(crs=proj, draw_labels=True,
- #                 linewidth=2, color='gray', alpha=0.5, linestyle='--')
+gl = ax.gridlines(crs=proj, draw_labels=True,
+                  linewidth=2, color='gray', alpha=0.5, linestyle='--')
 
-lat=ds['latitude'].values
-lon=ds['longitude'].values
 ds_unit=ds['specific_humidity_mean'].loc[{'plev':41}]
+ds_unit=ds_unit.transpose('latitude','longitude')
+ds_unit=ds_unit.reindex(latitude=list(reversed(ds_unit.latitude)))
+lat=ds_unit['latitude'].values
+lon=ds_unit['longitude'].values
+
+print(ds_unit)
 print(lon)                            
 var=np.squeeze(ds_unit.values)
-lat,lon=np.meshgrid(lat,lon)
+lon,lat=np.meshgrid(lon,lat)
 ax.pcolormesh(lon, lat, var,cmap='viridis',transform=proj)
 ax.coastlines()
 plt.savefig('test.png',dpi=300)
 plt.show()
+plt.close()
+var=np.squeeze(ds_unit.values)
+plt.imshow(var, cmap='viridis')
 

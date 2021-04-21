@@ -17,12 +17,8 @@ def map_plotter(ds, title, label, units_label, vmin, vmax):
     values[values == 0] = np.nan
     #values=values[:50,:]
     fig, ax = plt.subplots()
-    if vmin == vmax:
-        im = ax.imshow(values, cmap='viridis')
-        #im = ax.imshow(values, cmap='viridis')
-    else:
-        im = ax.imshow(values, cmap='viridis', extent=[ds['lon'].min(
-        ), ds['lon'].max(), ds['lat'].min(), ds['lat'].max()], vmin=vmin, vmax=vmax)
+    im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
+        ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
     cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
     cbar.set_label(units_label)
     plt.xlabel("lon")
@@ -34,7 +30,7 @@ def map_plotter(ds, title, label, units_label, vmin, vmax):
     
     
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_inpainted.nc')
     print(ds)
     #print(ds)
     ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'satellite':'snpp','time':'pm'}]
