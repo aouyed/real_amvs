@@ -30,11 +30,13 @@ def map_plotter(ds, title, label, units_label, vmin, vmax):
     
     
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_inpainted.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc')
     print(ds)
     #print(ds)
     ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'satellite':'snpp','time':'pm'}]
-    map_plotter(ds_map, 'test', 'specific_humidity_mean', ' ', 0, 0)
+    map_plotter(ds_map, 'snpp', 'specific_humidity_mean', ' ', 0, 0.014)
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'satellite':'j1','time':'pm'}]
+    map_plotter(ds_map, 'j1', 'specific_humidity_mean', ' ', 0, 0.014)
     
 if __name__=="__main__":
     main()

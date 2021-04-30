@@ -10,6 +10,9 @@ import xarray as xr
 import numpy as np
 import metpy.calc as mpcalc
 from metpy.units import units
+import cProfile
+
+
 R = 6371000
 dt_inv=1/3600
 
@@ -34,16 +37,53 @@ def frame_retreiver(ds, satellite):
     frame[frame == 0] = np.nan
     return frame
     
-def ds_unit_calc(ds, day,pressure, time):
+def ds_unit_calc0(ds, day,pressure, time):
     ds_unit=ds.loc[{'day':day ,'plev':pressure,'time':time}]
-    frame0=frame_retreiver(ds_unit,'snpp')
-    frame=frame_retreiver(ds_unit, 'j1')
+    frame0=frame_retreiver(ds_unit,'j1')
+    frame=frame_retreiver(ds_unit, 'snpp')
     flowx,flowy=calc(frame0, frame)
     ds_unit['flowx']=(['latitude','longitude'],flowx)
     ds_unit['flowy']=(['latitude','longitude'],flowy)
     ds_unit['u']=ds_unit['flowx']*ds_unit['g_factor_x']
     ds_unit['v']=ds_unit['flowy']*ds_unit['g_factor_y']
     return ds_unit
+
+def ds_unit_calc(ds, day,pressure, time):
+    ds_unit=ds.loc[{'day':day ,'plev':pressure,'time':time}]
+    df=ds_unit.to_dataframe()
+    df=df.dropna().set_index('obs_time', append=True)
+    ds_df=xr.Dataset.from_dataframe(df)
+    ds_df["flowx"] = xr.full_like(ds_df['specific_humidity_mean'].loc[
+        {'satellite':'j1','obs_time':ds_df['obs_time'].values[0]}
+        ].drop(['satellite','obs_time']), fill_value=0)
+    ds_df["flowy"] = xr.full_like(ds_df['flowx'], fill_value=0)
+    for obs_time in ds_df.loc[{'satellite':'j1'}]['obs_time'].values:
+        print(obs_time)
+        ds=ds_df.loc[{'obs_time':obs_time,'satellite':'j1'}]
+        df=ds.to_dataframe()
+        ds=xr.Dataset.from_dataframe(df.dropna())
+        ds=ds_df.loc[{'obs_time':obs_time,'latitude':ds['latitude'].values,
+                          'longitude': ds['longitude'].values}]
+        print('formatting done')
+        frame0=frame_retreiver(ds,'j1')
+        frame=frame_retreiver(ds, 'snpp')
+        print(np.shape(frame))
+        if 0 not in np.shape(frame):
+            flowx,flowy=calc(frame0, frame)
+            #flowx=frame0
+            #flowy=frame
+        
+            ds['flowx']=(['latitude','longitude'],flowx)
+            ds['flowy']=(['latitude','longitude'],flowy)
+            ds_df['flowx'].loc[{'latitude':ds['latitude'].values,
+                              'longitude': ds['longitude'].values}]=ds['flowx']
+            ds_df['flowy'].loc[{'latitude':ds['latitude'].values,
+                              'longitude': ds['longitude'].values}]=ds['flowy']
+    
+        
+    return ds_df[['flowx','flowy']]
+
+
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_inpainted.nc')
     drad = np.deg2rad(1)
@@ -60,7 +100,7 @@ def main():
         print(day)
  
         ds_unit=xr.Dataset()
-        for pressure in ds['plev'].values:
+        for pressure in [ds['plev'].values[41]]:
             ds_unit1=xr.Dataset()
             for time in ds['time'].values:
                 
@@ -84,7 +124,7 @@ def main():
     print(ds_total)
         
         
-    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_amvs.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test.nc')
 
 if __name__ == '__main__':
     main()
