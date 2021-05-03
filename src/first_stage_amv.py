@@ -13,6 +13,7 @@ from metpy.units import units
 import cProfile
 
 
+
 R = 6371000
 dt_inv=1/3600
 
@@ -49,6 +50,9 @@ def ds_unit_calc0(ds, day,pressure, time):
     return ds_unit
 
 def ds_unit_calc(ds, day,pressure, time):
+    suma=0
+    latlona=ds['latitude'].values.shape[0]*ds['longitude'].values.shape[0]
+    print(latlona)
     ds_unit=ds.loc[{'day':day ,'plev':pressure,'time':time}]
     df=ds_unit.to_dataframe()
     df=df.dropna().set_index('obs_time', append=True)
@@ -61,7 +65,7 @@ def ds_unit_calc(ds, day,pressure, time):
         print(obs_time)
         ds=ds_df.loc[{'obs_time':obs_time,'satellite':'j1'}]
         df=ds.to_dataframe()
-        ds=xr.Dataset.from_dataframe(df.dropna())
+        ds=xr.Dataset.from_dataframe(df.dropna(subset=['specific_humidity_mean']))
         ds=ds_df.loc[{'obs_time':obs_time,'latitude':ds['latitude'].values,
                           'longitude': ds['longitude'].values}]
         print('formatting done')
@@ -69,9 +73,13 @@ def ds_unit_calc(ds, day,pressure, time):
         frame=frame_retreiver(ds, 'snpp')
         print(np.shape(frame))
         if 0 not in np.shape(frame):
-            flowx,flowy=calc(frame0, frame)
-            #flowx=frame0
-            #flowy=frame
+            print(df.dropna(subset=['specific_humidity_mean']).shape[0])
+            suma=suma+df.dropna(subset=['specific_humidity_mean']).shape[0]
+            print('ratio')
+            print(suma/latlona)
+            #flowx,flowy=calc(frame0, frame)
+            flowx=frame0
+            flowy=frame
         
             ds['flowx']=(['latitude','longitude'],flowx)
             ds['flowy']=(['latitude','longitude'],flowy)
@@ -79,8 +87,11 @@ def ds_unit_calc(ds, day,pressure, time):
                               'longitude': ds['longitude'].values}]=ds['flowx']
             ds_df['flowy'].loc[{'latitude':ds['latitude'].values,
                               'longitude': ds['longitude'].values}]=ds['flowy']
-    
+      
         
+    
+    print('final ratio: ')
+    print(suma/latlona)
     return ds_df[['flowx','flowy']]
 
 
@@ -96,7 +107,7 @@ def main():
     
     print(ds)
     ds_total=xr.Dataset()
-    for day in ds['day'].values:
+    for day in [ds['day'].values[3]]:
         print(day)
  
         ds_unit=xr.Dataset()
@@ -124,7 +135,7 @@ def main():
     print(ds_total)
         
         
-    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test2.nc')
 
 if __name__ == '__main__':
     main()
