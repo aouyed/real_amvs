@@ -54,49 +54,39 @@ def ds_unit_calc(ds, day,pressure, time):
     latlona=ds['latitude'].values.shape[0]*ds['longitude'].values.shape[0]
     print(latlona)
     ds_unit=ds.loc[{'day':day ,'plev':pressure,'time':time}]
-    df=ds_unit.to_dataframe()
-    df=df.dropna().set_index('obs_time', append=True)
-    ds_df=xr.Dataset.from_dataframe(df)
-    ds_df["flowx"] = xr.full_like(ds_df['specific_humidity_mean'].loc[
-        {'satellite':'j1','obs_time':ds_df['obs_time'].values[0]}
-        ].drop(['satellite','obs_time']), fill_value=0)
-    ds_df["flowy"] = xr.full_like(ds_df['flowx'], fill_value=0)
-    for obs_time in ds_df.loc[{'satellite':'j1'}]['obs_time'].values:
-        print(obs_time)
-        ds=ds_df.loc[{'obs_time':obs_time,'satellite':'j1'}]
-        df=ds.to_dataframe()
-        ds=xr.Dataset.from_dataframe(df.dropna(subset=['specific_humidity_mean']))
-        ds=ds_df.loc[{'obs_time':obs_time,'latitude':ds['latitude'].values,
-                          'longitude': ds['longitude'].values}]
-        print('formatting done')
-        frame0=frame_retreiver(ds,'j1')
-        frame=frame_retreiver(ds, 'snpp')
-        print(np.shape(frame))
-        if 0 not in np.shape(frame):
-            print(df.dropna(subset=['specific_humidity_mean']).shape[0])
-            suma=suma+df.dropna(subset=['specific_humidity_mean']).shape[0]
-            print('ratio')
-            print(suma/latlona)
-            #flowx,flowy=calc(frame0, frame)
-            flowx=frame0
-            flowy=frame
+    ds_unit['humidity_overlap'] = xr.full_like(ds_unit['specific_humidity_mean'], fill_value=np.nan)
+    
+    ds_j1=ds_unit.loc[{'satellite':'j1'}]
+    ds_snpp=ds_unit.loc[{'satellite':'snpp'}]
+
+    
+    condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
+    condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
+    
+    ds_unit['humidity_overlap'].loc[{'satellite':'j1'}]=ds_j1['specific_humidity_mean'] .where(
+        condition1 & condition2)
+    ds_unit['humidity_overlap'].loc[{'satellite':'snpp'}]=ds_snpp['specific_humidity_mean'].where(
+        condition1 & condition2)
         
-            ds['flowx']=(['latitude','longitude'],flowx)
-            ds['flowy']=(['latitude','longitude'],flowy)
-            ds_df['flowx'].loc[{'latitude':ds['latitude'].values,
-                              'longitude': ds['longitude'].values}]=ds['flowx']
-            ds_df['flowy'].loc[{'latitude':ds['latitude'].values,
-                              'longitude': ds['longitude'].values}]=ds['flowy']
-      
+        
+    mind=ds_unit['obs_time'].min(skipna=True).values
+    hours=np.arange(2,14,2)
+    swathes=[]
+    swathes.append([mind, mind+np.timedelta64(2, 'h')])
+    for hour in hours:
+        swathes.append([mind+np.timedelta64(hour, 'h'),
+                        mind+np.timedelta64(hour+2, 'h')])
+    
+    return ds_unit    
         
     
-    print('final ratio: ')
-    print(suma/latlona)
-    return ds_df[['flowx','flowy']]
+        
+      
+
 
 
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_inpainted.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc')
     drad = np.deg2rad(1)
     dx = R*abs(np.cos(np.deg2rad(ds.latitude)))*drad
     scale_x = dx*dt_inv
