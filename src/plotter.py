@@ -39,14 +39,15 @@ def main():
     mind=ds_map['obs_time'].min(skipna=True).values
     #print(mind)
     timedelta=mind+np.timedelta64(2, 'h')
-    ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
+    #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
     map_plotter(ds_map, 'snpp_o', 'humidity_overlap', ' ', 0, 0.014)
     map_plotter(ds_map, 'snpp', 'specific_humidity_mean', ' ', 0, 0.014)
     
     ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'am','satellite':'j1'}]
     
     timedelta=mind+np.timedelta64(2, 'h')
-    ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
+    #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
+    map_plotter(ds_map, 'j1_o', 'humidity_overlap', ' ', 0, 0.014)
     map_plotter(ds_map, 'j1', 'specific_humidity_mean', ' ', 0, 0.014)
     
 if __name__=="__main__":

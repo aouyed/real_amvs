@@ -10,6 +10,7 @@ import xarray as xr
 import numpy as np
 import metpy.calc as mpcalc
 from metpy.units import units
+import inpainter 
 import cProfile
 
 
@@ -17,25 +18,30 @@ import cProfile
 R = 6371000
 dt_inv=1/3600
 
-label='specific_humidity_mean'
+LABEL='specific_humidity_mean'
 
 
 
 def calc(frame0, frame):
-     nframe0 = cv2.normalize(src=frame0, dst=None,
+    if frame0.shape != frame.shape:
+        frame=np.resize(frame, frame0.shape)
+    
+    
+    nframe0 = cv2.normalize(src=frame0, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-     nframe = cv2.normalize(src=frame, dst=None,
+    nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-     optical_flow = cv2.optflow.createOptFlow_DeepFlow()
-     flowd = optical_flow.calc(nframe0, nframe, None)
-     flowx=flowd[:,:,0]
-     flowy=flowd[:,:,1]
+    optical_flow = cv2.optflow.createOptFlow_DeepFlow()
+    flowd = optical_flow.calc(nframe0, nframe, None)
+    flowx=flowd[:,:,0]
+    flowy=flowd[:,:,1]
      
-     return flowx, flowy
+    return flowx, flowy
  
-def frame_retreiver(ds, satellite):
-    frame= ds[label].loc[{'satellite':satellite}].values        
+def frame_retreiver(ds):
+    frame= ds[LABEL].values        
     frame[frame == 0] = np.nan
+    frame=inpainter.drop_nan(frame)
     return frame
     
 def ds_unit_calc0(ds, day,pressure, time):
@@ -53,31 +59,79 @@ def ds_unit_calc(ds, day,pressure, time):
     suma=0
     latlona=ds['latitude'].values.shape[0]*ds['longitude'].values.shape[0]
     print(latlona)
-    ds_unit=ds.loc[{'day':day ,'plev':pressure,'time':time}]
-    ds_unit['humidity_overlap'] = xr.full_like(ds_unit['specific_humidity_mean'], fill_value=np.nan)
-    
-    ds_j1=ds_unit.loc[{'satellite':'j1'}]
-    ds_snpp=ds_unit.loc[{'satellite':'snpp'}]
+    ds=ds.loc[{'day':day ,'plev':pressure,'time':time}]
+    ds=ds.drop(['day','plev','time'])
+    ds['humidity_overlap'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['flowx'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['flowy'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
 
-    
-    condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
-    condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
-    
-    ds_unit['humidity_overlap'].loc[{'satellite':'j1'}]=ds_j1['specific_humidity_mean'] .where(
-        condition1 & condition2)
-    ds_unit['humidity_overlap'].loc[{'satellite':'snpp'}]=ds_snpp['specific_humidity_mean'].where(
-        condition1 & condition2)
-        
-        
-    mind=ds_unit['obs_time'].min(skipna=True).values
-    hours=np.arange(2,14,2)
+    df=ds.to_dataframe()
+
+    dhours=1      
+    mind=ds['obs_time'].min(skipna=True).values
+    hours=np.arange(dhours,5,dhours)
     swathes=[]
-    swathes.append([mind, mind+np.timedelta64(2, 'h')])
+
+    swathes.append([mind, mind+np.timedelta64(dhours, 'h')])
     for hour in hours:
         swathes.append([mind+np.timedelta64(hour, 'h'),
-                        mind+np.timedelta64(hour+2, 'h')])
+                        mind+np.timedelta64(hour+dhours, 'h')])
+        
+    for swath in swathes:
+        ds_snpp=ds.loc[{'satellite':'snpp'}]
+        ds_j1=ds.loc[{'satellite':'j1'}]
+        start=swath[0]
+        end=swath[1]
+        
+        print('end1:')
+        print(end)
+        ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
+        start=start+np.timedelta64(50, 'm')
+        end=end+np.timedelta64(50, 'm')
+        print('end2:')
+        print(end)
+        
+        ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+        condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
+        condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
+        ds_j1_unit=ds_j1['specific_humidity_mean'].where(condition1 & condition2)
+        ds_snpp_unit=ds_snpp['specific_humidity_mean'].where(condition1 & condition2)
+        df_j1=ds_j1_unit.to_dataframe().dropna(subset=[LABEL]).set_index('satellite',append=True)
+        df_snpp=ds_snpp_unit.to_dataframe().dropna(subset=[LABEL]).set_index('satellite',append=True)
+        ds_j1=xr.Dataset.from_dataframe(df_j1)
+        ds_snpp=xr.Dataset.from_dataframe(df_snpp)
+        frame0=frame_retreiver(ds_snpp)
+        frame=frame_retreiver(ds_j1)
+        print(ds_j1)
+        print(ds_snpp)
+        flowx,flowy=calc(frame0, frame)
+        flowx = np.expand_dims(flowx, axis=2)
+        flowy = np.expand_dims(flowy, axis=2)
+        ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)
+        ds_snpp['flowy']=(['latitude','longitude','satellite'],flowy)
+        ds_j1['flowx']=(['latitude','longitude','satellite'],flowx)
+        ds_j1['flowy']=(['latitude','longitude','satellite'],flowy) 
+        
+        df_j1=ds_j1.to_dataframe()
+        df_snpp=ds_snpp.to_dataframe()
+        
+        swathi=df_snpp.index.values 
+        df['humidity_overlap'].loc[df.index.isin(swathi)]=df_snpp['specific_humidity_mean']
+        df['flowx'].loc[df.index.isin(swathi)]=df_snpp['flowx']
+        df['flowy'].loc[df.index.isin(swathi)]=df_snpp['flowy']
+
+        swathi=df_j1.index.values 
+        #print(swathi)
+        df['humidity_overlap'].loc[df.index.isin(swathi)]=df_j1['specific_humidity_mean']
+        df['flowx'].loc[df.index.isin(swathi)]=df_j1['flowx']
+        df['flowy'].loc[df.index.isin(swathi)]=df_j1['flowy']
+        
+        
+
+    ds=xr.Dataset.from_dataframe(df)
+ 
     
-    return ds_unit    
+    return ds   
         
     
         

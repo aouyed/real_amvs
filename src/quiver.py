@@ -26,8 +26,9 @@ def quiver_plot(ds, title):
     plt.close()
     
     
-ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test.nc')
-ds_map=ds.loc[{'day':datetime(2020,1,1),'plev':slice(706,707),'time':'pm'}]
+ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
+print(ds)
+ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':slice(706,707),'time':'pm','satellite':'snpp'}]
 ds_map = ds_map.coarsen(longitude=10, boundary='trim').mean().coarsen(
             latitude=10, boundary='trim').mean()
 quiver_plot(ds_map, 'test')
