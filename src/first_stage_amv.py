@@ -39,8 +39,8 @@ def calc(frame0, frame):
     return flowx, flowy
  
 def frame_retreiver(ds):
-    frame= ds[LABEL].values        
-    frame[frame == 0] = np.nan
+    frame= np.squeeze(ds[LABEL].values)    
+    #frame[frame == 0] = np.nan
     frame=inpainter.drop_nan(frame)
     return frame
     
@@ -67,15 +67,15 @@ def ds_unit_calc(ds, day,pressure, time):
 
     df=ds.to_dataframe()
 
-    dhours=1      
+    dhours=60   
     mind=ds['obs_time'].min(skipna=True).values
-    hours=np.arange(dhours,5,dhours)
+    hours=np.arange(dhours,dhours*24,dhours)
     swathes=[]
 
-    swathes.append([mind, mind+np.timedelta64(dhours, 'h')])
+    swathes.append([mind, mind+np.timedelta64(dhours, 'm')])
     for hour in hours:
-        swathes.append([mind+np.timedelta64(hour, 'h'),
-                        mind+np.timedelta64(hour+dhours, 'h')])
+        swathes.append([mind+np.timedelta64(hour, 'm'),
+                        mind+np.timedelta64(hour+dhours, 'm')])
         
     for swath in swathes:
         ds_snpp=ds.loc[{'satellite':'snpp'}]
@@ -86,45 +86,59 @@ def ds_unit_calc(ds, day,pressure, time):
         print('end1:')
         print(end)
         ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
+        df_helper=ds_snpp.to_dataframe().dropna(subset=[LABEL])
+        ds_helper=xr.Dataset.from_dataframe(df_helper)
+
         start=start+np.timedelta64(50, 'm')
         end=end+np.timedelta64(50, 'm')
         print('end2:')
         print(end)
         
         ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+      
+        #help1=ds_j1.latitude.isin(ds_helper.latitude.values)
+        #help2=ds_j1.longitude.isin(ds_helper.longitude.values)
+                                          
+        #ds_j1=ds_j1.where(help1 & help2)
+        #ds_j1=ds_j1.sel(latitude=ds_snpp['latitude'].values, longitude=ds_snpp[])
         condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
         condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
         ds_j1_unit=ds_j1['specific_humidity_mean'].where(condition1 & condition2)
         ds_snpp_unit=ds_snpp['specific_humidity_mean'].where(condition1 & condition2)
         df_j1=ds_j1_unit.to_dataframe().dropna(subset=[LABEL]).set_index('satellite',append=True)
         df_snpp=ds_snpp_unit.to_dataframe().dropna(subset=[LABEL]).set_index('satellite',append=True)
+       
         ds_j1=xr.Dataset.from_dataframe(df_j1)
         ds_snpp=xr.Dataset.from_dataframe(df_snpp)
-        frame0=frame_retreiver(ds_snpp)
-        frame=frame_retreiver(ds_j1)
-        print(ds_j1)
-        print(ds_snpp)
-        flowx,flowy=calc(frame0, frame)
-        flowx = np.expand_dims(flowx, axis=2)
-        flowy = np.expand_dims(flowy, axis=2)
-        ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)
-        ds_snpp['flowy']=(['latitude','longitude','satellite'],flowy)
-        ds_j1['flowx']=(['latitude','longitude','satellite'],flowx)
-        ds_j1['flowy']=(['latitude','longitude','satellite'],flowy) 
+        ds_merged=xr.merge([ds_j1,ds_snpp])
+        if (ds_snpp['specific_humidity_mean'].values.shape[0]>0) & (
+                ds_j1['specific_humidity_mean'].values.shape[0]>0):
+                    
+            ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
+            ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
+            frame0=frame_retreiver(ds_snpp)
+            frame=frame_retreiver(ds_j1)
+            flowx,flowy=calc(frame0, frame)
+            flowx = np.expand_dims(flowx, axis=2)
+            flowy = np.expand_dims(flowy, axis=2)
+            ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)
+            ds_snpp['flowy']=(['latitude','longitude','satellite'],flowy)
+            ds_j1['flowx']=(['latitude','longitude','satellite'],flowx)
+            ds_j1['flowy']=(['latitude','longitude','satellite'],flowy) 
+            
+            df_j1=ds_j1.to_dataframe().dropna()
+            df_snpp=ds_snpp.to_dataframe().dropna()
         
-        df_j1=ds_j1.to_dataframe()
-        df_snpp=ds_snpp.to_dataframe()
-        
-        swathi=df_snpp.index.values 
-        df['humidity_overlap'].loc[df.index.isin(swathi)]=df_snpp['specific_humidity_mean']
-        df['flowx'].loc[df.index.isin(swathi)]=df_snpp['flowx']
-        df['flowy'].loc[df.index.isin(swathi)]=df_snpp['flowy']
-
-        swathi=df_j1.index.values 
-        #print(swathi)
-        df['humidity_overlap'].loc[df.index.isin(swathi)]=df_j1['specific_humidity_mean']
-        df['flowx'].loc[df.index.isin(swathi)]=df_j1['flowx']
-        df['flowy'].loc[df.index.isin(swathi)]=df_j1['flowy']
+            swathi=df_snpp.index.values 
+            df['humidity_overlap'].loc[df.index.isin(swathi)]=df_snpp['specific_humidity_mean']
+            df['flowx'].loc[df.index.isin(swathi)]=df_snpp['flowx']
+            df['flowy'].loc[df.index.isin(swathi)]=df_snpp['flowy']
+    
+            swathi=df_j1.index.values 
+            #print(swathi)
+            df['humidity_overlap'].loc[df.index.isin(swathi)]=df_j1['specific_humidity_mean']
+            df['flowx'].loc[df.index.isin(swathi)]=df_j1['flowx']
+            df['flowy'].loc[df.index.isin(swathi)]=df_j1['flowy']
         
         
 

@@ -35,15 +35,15 @@ def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
     print(ds)
     #print(ds)
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'am','satellite':'snpp'}]
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'snpp'}]
     mind=ds_map['obs_time'].min(skipna=True).values
     #print(mind)
-    timedelta=mind+np.timedelta64(2, 'h')
-    #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
+    timedelta=mind+np.timedelta64(1, 'h')
+    ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
     map_plotter(ds_map, 'snpp_o', 'humidity_overlap', ' ', 0, 0.014)
     map_plotter(ds_map, 'snpp', 'specific_humidity_mean', ' ', 0, 0.014)
     
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'am','satellite':'j1'}]
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'j1'}]
     
     timedelta=mind+np.timedelta64(2, 'h')
     #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
