@@ -12,6 +12,8 @@ import metpy.calc as mpcalc
 from metpy.units import units
 import inpainter 
 import amv_calculators as calc
+import quiver
+import plotter
 
 
 
@@ -43,10 +45,15 @@ def ds_unit_calc(ds, day,pressure, time):
         end=swath[1]
         print(start)
         ds_merged, ds_snpp, ds_j1=calc.prepare_patch(ds_snpp, ds_j1, start, end)
-    
+        
         if (ds_snpp['specific_humidity_mean'].values.shape[0]>0) & (
                 ds_j1['specific_humidity_mean'].values.shape[0]>0):                 
-            df=calc.amv_calculator(ds_merged, df)
+            df, ds_snpp_p,ds_j1_p=calc.amv_calculator(ds_merged, df)
+            print(ds_snpp_p)
+            quiver.quiver_plot(ds_j1_p,'j1_'+str(start))
+            quiver.quiver_plot(ds_snpp_p,'snpp_'+str(start))
+            plotter.map_plotter(ds_j1_p,'j1_'+str(start),LABEL)
+            plotter.map_plotter(ds_snpp_p,'snpp_'+str(start),LABEL)
         
     ds=xr.Dataset.from_dataframe(df)
    

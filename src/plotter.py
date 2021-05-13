@@ -14,10 +14,8 @@ import numpy as np
 import cv2
 from dateutil.parser import parse
 
-def map_plotter(ds, title, label, units_label, vmin, vmax):
-    values = np.squeeze(ds[label].values)
-    values[values == 0] = np.nan
-    #values=values[:50,:]
+def map_plotter(ds, title, label, units_label=''):
+    values=np.squeeze(ds[label].values)
     fig, ax = plt.subplots()
     im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
@@ -25,7 +23,8 @@ def map_plotter(ds, title, label, units_label, vmin, vmax):
     cbar.set_label(units_label)
     plt.xlabel("lon")
     plt.ylabel("lat")
-    plt.savefig(title+'.png', dpi=300)
+    plt.savefig('../data/processed/plots/'+title+'.png',
+                bbox_inches='tight', dpi=300)
     plt.title(label)
     plt.show()
     plt.close()    

@@ -17,7 +17,7 @@ def quiver_plot(ds, title):
     ax.set_title(title)
     Q = ax.quiver(X, Y, np.squeeze(
         ds['u'].values), np.squeeze(ds['v'].values))
-    qk = ax.quiverkey(Q, 0.8, 0.9, 1, r'$0.1$ pixel', labelpos='E',
+    qk = ax.quiverkey(Q, 0.8, 0.9, 1, r'$1$ m/s', labelpos='E',
                       coordinates='figure')
     fig.tight_layout()
     plt.savefig('../data/processed/plots/quiver_'+title+'.png',

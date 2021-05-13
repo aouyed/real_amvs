@@ -11,7 +11,7 @@ import numpy as np
 import metpy.calc as mpcalc
 from metpy.units import units
 import inpainter 
-import cProfile
+import quiver
 
 
 
@@ -70,6 +70,9 @@ def swath_initializer(ds):
     
 
 def prepare_patch(ds_snpp, ds_j1, start, end):
+    ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
+    ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+    
     condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
     condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
     ds_j1_unit=ds_j1[['specific_humidity_mean','obs_time']].where(condition1 & condition2)
@@ -83,7 +86,7 @@ def prepare_patch(ds_snpp, ds_j1, start, end):
     
     return ds_merged, ds_snpp, ds_j1
 
-def flow_calculator(ds_snpp, ds_j1):
+def flow_calculator(ds_snpp, ds_j1, ds_merged):
     frame0=frame_retreiver(ds_snpp)
     frame=frame_retreiver(ds_j1)
     flowx,flowy=calc(frame0, frame)
@@ -93,13 +96,10 @@ def flow_calculator(ds_snpp, ds_j1):
     ds_snpp['flowy']=(['latitude','longitude','satellite'],flowy)
     ds_j1['flowx']=(['latitude','longitude','satellite'],flowx)
     ds_j1['flowy']=(['latitude','longitude','satellite'],flowy)
-    return ds_snpp, ds_j1
-
-def amv_calculator(ds_merged, df):
-    ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
-    ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
-    ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1)
-            
+    frame = np.expand_dims(frame, axis=2)
+    frame0 = np.expand_dims(frame0, axis=2)
+    #ds_snpp[LABEL]=(['latitude','longitude','satellite'],frame0)
+    #ds_j1[LABEL]=(['latitude','longitude','satellite'],frame)   
     dt=ds_merged['obs_time'].loc[
         {'satellite':'j1'}]-ds_merged['obs_time'].loc[{'satellite':'snpp'}]
     dt_int=dt.values.astype('timedelta64[s]').astype(np.int32)
@@ -112,22 +112,30 @@ def amv_calculator(ds_merged, df):
             
     ds_j1['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_j1['flowx']
     ds_j1['v']= scale_y*ds_merged['dt_inv']*ds_j1['flowy']
+   
+    return ds_snpp, ds_j1
+
+def df_filler(df, df_sat):
+    swathi=df_sat.index.values 
+    df['humidity_overlap'].loc[df.index.isin(swathi)]=df_sat['specific_humidity_mean']
+    df['flowx'].loc[df.index.isin(swathi)]=df_sat['flowx']
+    df['flowy'].loc[df.index.isin(swathi)]=df_sat['flowy']
+    df['u'].loc[df.index.isin(swathi)]=df_sat['u']
+    df['v'].loc[df.index.isin(swathi)]=df_sat['v']
+    return df
+    
+
+def amv_calculator(ds_merged, df):
+    ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
+    ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
+    ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged)
+   
     df_j1=ds_j1.to_dataframe().dropna()
     df_snpp=ds_snpp.to_dataframe().dropna()
         
-    swathi=df_snpp.index.values 
-    df['humidity_overlap'].loc[df.index.isin(swathi)]=df_snpp['specific_humidity_mean']
-    df['flowx'].loc[df.index.isin(swathi)]=df_snpp['flowx']
-    df['flowy'].loc[df.index.isin(swathi)]=df_snpp['flowy']
-    df['u'].loc[df.index.isin(swathi)]=df_snpp['u']
-    df['v'].loc[df.index.isin(swathi)]=df_snpp['v']
-    swathi=df_j1.index.values 
-            #print(swathi)
-    df['humidity_overlap'].loc[df.index.isin(swathi)]=df_j1['specific_humidity_mean']
-    df['flowx'].loc[df.index.isin(swathi)]=df_j1['flowx']
-    df['flowy'].loc[df.index.isin(swathi)]=df_j1['flowy']
-    df['u'].loc[df.index.isin(swathi)]=df_j1['u']
-    df['v'].loc[df.index.isin(swathi)]=df_j1['v']
-    return df
+    df=df_filler(df, df_snpp)
+    df=df_filler(df, df_j1)
+    
+    return df, ds_snpp, ds_j1
     
 
