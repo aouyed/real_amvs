@@ -16,6 +16,8 @@ from dateutil.parser import parse
 
 def map_plotter(ds, title, label, units_label=''):
     values=np.squeeze(ds[label].values)
+    print('frame shape')
+    print(values.shape)
     fig, ax = plt.subplots()
     im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
@@ -37,16 +39,16 @@ def main():
     mind=ds_map['obs_time'].min(skipna=True).values
     #print(mind)
     timedelta=mind+np.timedelta64(1, 'h')
-    ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
-    map_plotter(ds_map, 'snpp_o', 'humidity_overlap', ' ', 0, 0.014)
-    map_plotter(ds_map, 'snpp', 'specific_humidity_mean', ' ', 0, 0.014)
+   # ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
+    map_plotter(ds_map, 'snpp_o', 'humidity_overlap', )
+    map_plotter(ds_map, 'snpp', 'specific_humidity_mean')
     
     ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'j1'}]
     
     timedelta=mind+np.timedelta64(1, 'h')
     #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
-    map_plotter(ds_map, 'j1_o', 'humidity_overlap', ' ', 0, 0.014)
-    map_plotter(ds_map, 'j1', 'specific_humidity_mean', ' ', 0, 0.014)
+    map_plotter(ds_map, 'j1_o', 'humidity_overlap')
+    map_plotter(ds_map, 'j1', 'specific_humidity_mean')
     
 if __name__=="__main__":
     main()

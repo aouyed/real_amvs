@@ -36,7 +36,7 @@ def ds_unit_calc(ds, day,pressure, time):
     ds=calc.prepare_ds(ds)
     
     df=ds.to_dataframe()
-    swathes=calc.swath_initializer(ds)
+    swathes=calc.swath_initializer(ds,60)
   
     for swath in swathes:
         ds_snpp=ds.loc[{'satellite':'snpp'}]

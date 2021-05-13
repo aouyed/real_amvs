@@ -56,21 +56,24 @@ def prepare_ds(ds):
     ds['v'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     return ds
 
-def swath_initializer(ds):   
-    dhours=60   
+def swath_initializer(ds, dmins):   
+    number=(24*60)/dmins
     mind=ds['obs_time'].min(skipna=True).values
-    hours=np.arange(dhours,dhours*24,dhours)
+    times=np.arange(dmins,dmins*number,dmins)
+    print(times)
     swathes=[]
-
-    swathes.append([mind, mind+np.timedelta64(dhours, 'm')])
-    for hour in hours:
-        swathes.append([mind+np.timedelta64(hour, 'm'),
-                        mind+np.timedelta64(hour+dhours, 'm')])
+    swathes.append([mind, mind+np.timedelta64(dmins, 'm')])
+    for time in times:
+        time=int(round(time))
+        swathes.append([mind+np.timedelta64(time, 'm'),
+                        mind+np.timedelta64(time+dmins, 'm')])
     return swathes
     
 
 def prepare_patch(ds_snpp, ds_j1, start, end):
     ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
+    start=start+np.timedelta64(50, 'm')
+    end=end+np.timedelta64(50, 'm')
     ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
     
     condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
