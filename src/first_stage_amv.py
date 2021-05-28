@@ -34,9 +34,14 @@ def ds_unit_calc(ds, day,pressure, time):
     ds=ds.loc[{'day':day ,'plev':pressure,'time':time}]
     ds=ds.drop(['day','plev','time'])
     ds=calc.prepare_ds(ds)
+    ds_model=xr.open_dataset('../data/raw/reanalysis/07_03_20.nc')
+    ds_model=ds_model.sel(level=pressure, method='nearest')
+    ds_model=ds_model.drop('level')
+    ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
+    ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
     
     df=ds.to_dataframe()
-    swathes=calc.swath_initializer(ds,60)
+    swathes=calc.swath_initializer(ds,5)
   
     for swath in swathes:
         ds_snpp=ds.loc[{'satellite':'snpp'}]
@@ -44,17 +49,24 @@ def ds_unit_calc(ds, day,pressure, time):
         start=swath[0]
         end=swath[1]
         print(start)
-        ds_merged, ds_snpp, ds_j1=calc.prepare_patch(ds_snpp, ds_j1, start, end)
-        
-        if (ds_snpp['specific_humidity_mean'].values.shape[0]>0) & (
-                ds_j1['specific_humidity_mean'].values.shape[0]>0):                 
-            df, ds_snpp_p,ds_j1_p=calc.amv_calculator(ds_merged, df)
+        ds_merged, ds_snpp, ds_j1, df_snpp=calc.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
+   
+        if (df_snpp.shape[0]>100):
+            condition2=(ds_snpp['longitude'].max()-ds_snpp['longitude'].min())<50
+                      
+            df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df)
+            ds_model_p1=ds_model_p[['u','v']].loc[{'satellite':'j1'}].drop('satellite')
+            ds_model_p_test=ds_model_p[['u','v']].loc[{'satellite':'snpp'}].drop('satellite')
+           
             print(ds_snpp_p)
-            quiver.quiver_plot(ds_j1_p,'j1_'+str(start))
-            quiver.quiver_plot(ds_snpp_p,'snpp_'+str(start))
+            quiver.quiver_plot(ds_j1_p,'j1_'+str(start),'u','v')
+            quiver.quiver_plot(ds_snpp_p,'snpp_'+str(start),'u','v')
+            quiver.quiver_plot(ds_model_p1,'model_'+str(start),'u','v')
             plotter.map_plotter(ds_j1_p,'j1_'+str(start),LABEL)
             plotter.map_plotter(ds_snpp_p,'snpp_'+str(start),LABEL)
-        
+      
+
+            
     ds=xr.Dataset.from_dataframe(df)
    
     return ds   

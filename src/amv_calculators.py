@@ -44,7 +44,8 @@ def calc(frame0, frame):
     return flowx, flowy
  
 def frame_retreiver(ds):
-    frame= np.squeeze(ds[LABEL].values)    
+    frame= np.squeeze(ds[LABEL].values)  
+    frame=np.nan_to_num(frame)
     frame=inpainter.drop_nan(frame)
     return frame
     
@@ -54,6 +55,10 @@ def prepare_ds(ds):
     ds['flowy'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['u'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['v'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['u_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['v_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+
     return ds
 
 def swath_initializer(ds, dmins):   
@@ -70,11 +75,14 @@ def swath_initializer(ds, dmins):
     return swathes
     
 
-def prepare_patch(ds_snpp, ds_j1, start, end):
+def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
+    model_t=start+np.timedelta64(25, 'm')
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
     ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+    
+    
     
     condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
     condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
@@ -86,8 +94,13 @@ def prepare_patch(ds_snpp, ds_j1, start, end):
     ds_j1=xr.Dataset.from_dataframe(df_j1)
     ds_snpp=xr.Dataset.from_dataframe(df_snpp)
     ds_merged=xr.merge([ds_j1,ds_snpp])
+    ds_model=ds_model.sel(time=model_t, latitude=ds_merged['latitude'].values, longitude=ds_merged['longitude'].values, method='nearest' )
+    ds_model['latitude']=ds_merged['latitude'].values
+    ds_model['longitude']=ds_merged['longitude'].values
+    ds_model=ds_model.drop('time')
+    ds_merged=xr.merge([ds_merged, ds_model])
     
-    return ds_merged, ds_snpp, ds_j1
+    return ds_merged, ds_snpp, ds_j1, df_snpp
 
 def flow_calculator(ds_snpp, ds_j1, ds_merged):
     frame0=frame_retreiver(ds_snpp)
@@ -100,9 +113,7 @@ def flow_calculator(ds_snpp, ds_j1, ds_merged):
     ds_j1['flowx']=(['latitude','longitude','satellite'],flowx)
     ds_j1['flowy']=(['latitude','longitude','satellite'],flowy)
     frame = np.expand_dims(frame, axis=2)
-    frame0 = np.expand_dims(frame0, axis=2)
-    #ds_snpp[LABEL]=(['latitude','longitude','satellite'],frame0)
-    #ds_j1[LABEL]=(['latitude','longitude','satellite'],frame)   
+    frame0 = np.expand_dims(frame0, axis=2) 
     dt=ds_merged['obs_time'].loc[
         {'satellite':'j1'}]-ds_merged['obs_time'].loc[{'satellite':'snpp'}]
     dt_int=dt.values.astype('timedelta64[s]').astype(np.int32)
@@ -112,7 +123,8 @@ def flow_calculator(ds_snpp, ds_j1, ds_merged):
     ds_merged['dt_inv']=(['latitude','longitude'],dt_inv)
     ds_snpp['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_snpp['flowx']
     ds_snpp['v']= scale_y*ds_merged['dt_inv']*ds_snpp['flowy']
-            
+    ds_snpp['dt_inv']= ds_merged['dt_inv']  
+    ds_j1['dt_inv']= ds_merged['dt_inv']        
     ds_j1['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_j1['flowx']
     ds_j1['v']= scale_y*ds_merged['dt_inv']*ds_j1['flowy']
    
@@ -125,6 +137,14 @@ def df_filler(df, df_sat):
     df['flowy'].loc[df.index.isin(swathi)]=df_sat['flowy']
     df['u'].loc[df.index.isin(swathi)]=df_sat['u']
     df['v'].loc[df.index.isin(swathi)]=df_sat['v']
+    df['dt_inv'].loc[df.index.isin(swathi)]=df_sat['dt_inv']
+    return df
+
+def df_filler_model(df, df_sat, df_m):
+    swathi=df_sat.index.values 
+    df['u_era5'].loc[df.index.isin(swathi)]=df_m['u']
+    df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
+
     return df
     
 
@@ -132,13 +152,14 @@ def amv_calculator(ds_merged, df):
     ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
     ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
     ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged)
-   
+    ds_merged=ds_merged.where(ds_merged['specific_humidity_mean'])
     df_j1=ds_j1.to_dataframe().dropna()
     df_snpp=ds_snpp.to_dataframe().dropna()
-        
+    df_model=ds_merged[['u','v']].to_dataframe().dropna()   
     df=df_filler(df, df_snpp)
     df=df_filler(df, df_j1)
+    df=df_filler_model(df, df_j1, df_model)
     
-    return df, ds_snpp, ds_j1
+    return df, ds_snpp, ds_j1, ds_merged
     
 
