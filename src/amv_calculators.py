@@ -37,7 +37,8 @@ def calc(frame0, frame):
     nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     optical_flow = cv2.optflow.createOptFlow_DeepFlow()
-    flowd = optical_flow.calc(nframe0, nframe, None)
+    #flowd = optical_flow.calc(nframe0, nframe, None)
+    flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 5, 3, 5, 1.2, 0)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
      
@@ -144,6 +145,7 @@ def df_filler_model(df, df_sat, df_m):
     swathi=df_sat.index.values 
     df['u_era5'].loc[df.index.isin(swathi)]=df_m['u']
     df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
+
 
     return df
     

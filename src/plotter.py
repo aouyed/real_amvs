@@ -33,6 +33,7 @@ def map_plotter(ds, title, label, units_label=''):
     
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
+    breakpoint()
     print(ds)
     #print(ds)
     ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'snpp'}]

@@ -29,6 +29,7 @@ def quiver_plot(ds, title, u, v):
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
     print(ds)
+    breakpoint()
     ds['theta']=  np.arctan(ds['v']/ ds['u'])
     print(abs(ds['flowx']).mean())
     print(abs(ds['u']).mean())
@@ -49,8 +50,9 @@ def main():
     mint=np.datetime64('2020-07-03T05:30')
     maxt=np.datetime64('2020-07-03T06:30')
     #ds_map=ds_map.where((ds_map.obs_time>mint) & (ds_map.obs_time<maxt))
-    quiver_plot(ds_map, 'test','u','v')
     quiver_plot(ds_map, 'test_era5','u_era5','v_era5')
+    quiver_plot(ds_map, 'test','u','v')
+    
     
     ds_u=xr.open_dataset('../data/raw/reanalysis/u_700_2020_07_03_18:00:00_era5.nc')
     ds_v=xr.open_dataset('../data/raw/reanalysis/v_700_2020_07_03_18:00:00_era5.nc')
