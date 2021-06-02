@@ -14,7 +14,7 @@ import inpainter
 import amv_calculators as calc
 import quiver
 import plotter
-
+ALG='tvl1'
 
 
 R = 6371000
@@ -44,6 +44,7 @@ def ds_unit_calc(ds, day,pressure, time):
     swathes=calc.swath_initializer(ds,5)
   
     for swath in swathes:
+        print(time)
         ds_snpp=ds.loc[{'satellite':'snpp'}]
         ds_j1=ds.loc[{'satellite':'j1'}]
         start=swath[0]
@@ -102,7 +103,7 @@ def main():
     print(ds_total)
         
         
-    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test2.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test2_'+ALG+'.nc')
 
 if __name__ == '__main__':
     main()

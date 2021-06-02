@@ -27,26 +27,31 @@ def quiver_plot(ds, title, u, v):
     
 
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2_tvl1.nc')
     print(ds)
-    breakpoint()
     ds['theta']=  np.arctan(ds['v']/ ds['u'])
     print(abs(ds['flowx']).mean())
     print(abs(ds['u']).mean())
+    print(abs(ds['u_era5']).mean())
     print(abs(ds['flowy']).mean())
     print(abs(ds['v']).mean())
     print(abs(ds['dt_inv']).mean())
     print(abs(ds['theta']).mean())
-    ds['u'].plot.hist(bins=100)
-    plt.show()
-    plt.close()
-    ds['theta'].plot.hist(bins=100)
-    plt.show()
-    plt.close()
+    
 
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':slice(706,707),'time':'am','satellite':'snpp'}]
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'pm','satellite':'j1'}]
+    ds_map['u'].plot.hist(bins=100)
+    plt.show()
+    plt.close()
+    ds_map['u_era5'].plot.hist(bins=100)
+    plt.show()
+    plt.close()
+    ds_map['theta'].plot.hist(bins=100)
+    plt.show()
+    plt.close()
     ds_map = ds_map.coarsen(longitude=10, boundary='trim').mean().coarsen(
                 latitude=10, boundary='trim').mean()
+    
     mint=np.datetime64('2020-07-03T05:30')
     maxt=np.datetime64('2020-07-03T06:30')
     #ds_map=ds_map.where((ds_map.obs_time>mint) & (ds_map.obs_time<maxt))
@@ -61,19 +66,14 @@ def main():
     print(abs(ds['u']).mean())
     print(abs(ds['v']).mean())
     print(abs(ds['theta']).mean())
-    ds['u'].plot.hist(bins=100)
-    plt.show()
-    plt.close()
-    ds['theta'].plot.hist(bins=100)
-    plt.show()
-    plt.close()
+   
     ds = ds.assign_coords(longitude=(((ds.longitude + 180) % 360) - 180))
     ds=ds.reindex(longitude=np.sort(ds['longitude'].values))
     #ds=ds.rename({'u':'flowx','v': 'flowy'})
     #ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':slice(706,707),'time':'am','satellite':'snpp'}]
     ds_map = ds.coarsen(longitude=50, boundary='trim').mean().coarsen(
                 latitude=50, boundary='trim').mean()
-    quiver_plot(ds_map, 'era5_18z')
+    quiver_plot(ds_map, 'era5_18z','u','v')
     print(ds)
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ import metpy.calc as mpcalc
 from metpy.units import units
 import inpainter 
 import quiver
-
+import first_stage_amv as fsa
 
 
 R = 6371000
@@ -36,9 +36,18 @@ def calc(frame0, frame):
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-    optical_flow = cv2.optflow.createOptFlow_DeepFlow()
-    #flowd = optical_flow.calc(nframe0, nframe, None)
-    flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 5, 3, 5, 1.2, 0)
+    #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
+    if fsa.ALG == 'tvl1':
+        print('tvl1')
+        print('tvl1')
+        print('tvl1')
+        print('tvl1')
+        print('tvl1')
+        print('tvl1')
+        optical_flow=cv2.optflow.createOptFlow_DualTVL1()
+        flowd = optical_flow.calc(nframe0, nframe, None)
+    else:
+        flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
      
@@ -46,7 +55,7 @@ def calc(frame0, frame):
  
 def frame_retreiver(ds):
     frame= np.squeeze(ds[LABEL].values)  
-    frame=np.nan_to_num(frame)
+    #frame=np.nan_to_num(frame)
     frame=inpainter.drop_nan(frame)
     return frame
     
@@ -157,7 +166,7 @@ def amv_calculator(ds_merged, df):
     ds_merged=ds_merged.where(ds_merged['specific_humidity_mean'])
     df_j1=ds_j1.to_dataframe().dropna()
     df_snpp=ds_snpp.to_dataframe().dropna()
-    df_model=ds_merged[['u','v']].to_dataframe().dropna()   
+    df_model=ds_merged[['u','v']].loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
     df=df_filler(df, df_snpp)
     df=df_filler(df, df_j1)
     df=df_filler_model(df, df_j1, df_model)
