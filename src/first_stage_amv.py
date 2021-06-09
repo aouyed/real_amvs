@@ -14,7 +14,7 @@ import inpainter
 import amv_calculators as calc
 import quiver
 import plotter
-ALG='tvl1'
+ALG='farneback'
 
 
 R = 6371000
@@ -35,10 +35,14 @@ def ds_unit_calc(ds, day,pressure, time):
     ds=ds.drop(['day','plev','time'])
     ds=calc.prepare_ds(ds)
     ds_model=xr.open_dataset('../data/raw/reanalysis/07_03_20.nc')
+    print(ds_model)
     ds_model=ds_model.sel(level=pressure, method='nearest')
     ds_model=ds_model.drop('level')
     ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
     ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
+    ds_model = ds_model.coarsen(longitude=4, boundary='trim').mean().coarsen(
+                latitude=4, boundary='trim').mean()
+    
     
     df=ds.to_dataframe()
     swathes=calc.swath_initializer(ds,5)
@@ -56,8 +60,8 @@ def ds_unit_calc(ds, day,pressure, time):
             condition2=(ds_snpp['longitude'].max()-ds_snpp['longitude'].min())<50
                       
             df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df)
-            ds_model_p1=ds_model_p[['u','v']].loc[{'satellite':'j1'}].drop('satellite')
-            ds_model_p_test=ds_model_p[['u','v']].loc[{'satellite':'snpp'}].drop('satellite')
+            ds_model_p1=ds_model_p[['u','v','q']].loc[{'satellite':'j1'}].drop('satellite')
+            ds_model_p_test=ds_model_p[['u','v','q']].loc[{'satellite':'snpp'}].drop('satellite')
            
             print(ds_snpp_p)
             quiver.quiver_plot(ds_j1_p,'j1_'+str(start),'u','v')

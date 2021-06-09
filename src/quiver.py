@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 import pandas as pd
+import first_stage_amv as fsa
 from datetime import datetime 
 
 def quiver_plot(ds, title, u, v):
@@ -17,7 +18,7 @@ def quiver_plot(ds, title, u, v):
     ax.set_title(title)
     Q = ax.quiver(X, Y, np.squeeze(
         ds[u].values), np.squeeze(ds[v].values))
-    qk = ax.quiverkey(Q, 0.8, 0.9, 5, r'5$ m/s', labelpos='E',
+    qk = ax.quiverkey(Q, 0.8, 0.9, 5, r'5 m/s', labelpos='E',
                       coordinates='figure')
     fig.tight_layout()
     plt.savefig('../data/processed/plots/quiver_'+title+'.png',
@@ -27,7 +28,7 @@ def quiver_plot(ds, title, u, v):
     
 
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2_tvl1.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2_'+ fsa.ALG+'.nc')
     print(ds)
     ds['theta']=  np.arctan(ds['v']/ ds['u'])
     print(abs(ds['flowx']).mean())
