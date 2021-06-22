@@ -24,6 +24,7 @@ dx = R*drad
 scale_x = dx
 dy = R*drad
 scale_y = dy
+swath_hours=2
 
 
 LABEL='specific_humidity_mean'
@@ -45,7 +46,7 @@ def ds_unit_calc(ds, day,pressure, time):
     
     
     df=ds.to_dataframe()
-    swathes=calc.swath_initializer(ds,5)
+    swathes=calc.swath_initializer(ds,5,swath_hours)
   
     for swath in swathes:
         print(time)
@@ -84,9 +85,10 @@ def main():
     for day in [ds['day'].values[3]]:
         print(day)
         ds_unit=xr.Dataset()
-        for pressure in [ds['plev'].values[41]]:
+        for pressure in ds['plev']:
             ds_unit1=xr.Dataset()
-            for time in ds['time'].values:        
+            print(pressure)
+            for time in ['am']:       
                 ds_unit0=ds_unit_calc(ds, day,pressure, time)
                 ds_unit0 = ds_unit0.expand_dims('day').assign_coords(day=np.array([day]))
                 ds_unit0 = ds_unit0.expand_dims('time').assign_coords(time=np.array([time]))
@@ -107,7 +109,7 @@ def main():
     print(ds_total)
         
         
-    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test2_'+ALG+'.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test_3d_'+ALG+'.nc')
 
 if __name__ == '__main__':
     main()

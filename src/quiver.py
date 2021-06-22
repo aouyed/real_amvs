@@ -26,9 +26,24 @@ def quiver_plot(ds, title, u, v):
     plt.show()
     plt.close()
     
+def quiver_plot(ds, title, u, v):
+    fig, ax = plt.subplots()
+    X, Y = np.meshgrid(ds['longitude'].values, ds['latitude'].values)
+    ax.set_title(title)
+    Q = ax.quiver(X, Y, np.squeeze(
+        ds[u].values), np.squeeze(ds[v].values))
+    qk = ax.quiverkey(Q, 0.8, 0.9, 5, r'5 m/s', labelpos='E',
+                      coordinates='figure')
+    fig.tight_layout()
+    plt.savefig('../data/processed/plots/quiver_'+title+'.png',
+                bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()
+    
+    
 
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2_'+ fsa.ALG+'.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test_3d_'+ fsa.ALG+'.nc')
     print(ds)
     ds['theta']=  np.arctan(ds['v']/ ds['u'])
     print(abs(ds['flowx']).mean())
@@ -40,7 +55,8 @@ def main():
     print(abs(ds['theta']).mean())
     
 
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'pm','satellite':'j1'}]
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'am','satellite':'j1'}]
+    ds_map=ds_map.sel(plev='850',method='nearest')
     ds_map['u'].plot.hist(bins=100)
     plt.show()
     plt.close()
@@ -50,8 +66,8 @@ def main():
     ds_map['theta'].plot.hist(bins=100)
     plt.show()
     plt.close()
-    ds_map = ds_map.coarsen(longitude=10, boundary='trim').mean().coarsen(
-                latitude=10, boundary='trim').mean()
+    #ds_map = ds_map.coarsen(longitude=3, boundary='trim').mean().coarsen(
+                #latitude=3, boundary='trim').mean()
     
     mint=np.datetime64('2020-07-03T05:30')
     maxt=np.datetime64('2020-07-03T06:30')

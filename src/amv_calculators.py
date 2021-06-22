@@ -72,8 +72,8 @@ def prepare_ds(ds):
 
     return ds
 
-def swath_initializer(ds, dmins):   
-    number=(24*60)/dmins
+def swath_initializer(ds, dmins, swath_hours):   
+    number=(swath_hours*60)/dmins
     mind=ds['obs_time'].min(skipna=True).values
     times=np.arange(dmins,dmins*number,dmins)
     print(times)

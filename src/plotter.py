@@ -13,6 +13,7 @@ from datetime import timedelta
 import numpy as np
 import cv2
 from dateutil.parser import parse
+import first_stage_amv as fsa 
 
 def map_plotter(ds, title, label, units_label=''):
     values=np.squeeze(ds[label].values)
@@ -32,19 +33,20 @@ def map_plotter(ds, title, label, units_label=''):
     plt.close()    
     
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
-    breakpoint()
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test_3d_'+fsa.ALG+'.nc') 
+    #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
     print(ds)
     #print(ds)
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'snpp'}]
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'am','satellite':'snpp'}]
+    ds_map=ds_map.sel(plev=706, method='nearest')
     mind=ds_map['obs_time'].min(skipna=True).values
     #print(mind)
-    timedelta=mind+np.timedelta64(1, 'h')
-   # ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
+    timedelta=mind+np.timedelta64(2, 'h')
+    #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
     map_plotter(ds_map, 'snpp_o', 'humidity_overlap', )
     map_plotter(ds_map, 'snpp', 'specific_humidity_mean')
     
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'j1'}]
+    #ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'j1'}]
     
     timedelta=mind+np.timedelta64(1, 'h')
     #ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
