@@ -171,6 +171,7 @@ def amv_calculator(ds_merged, df):
     df=df_filler(df, df_snpp)
     df=df_filler(df, df_j1)
     df=df_filler_model(df, df_j1, df_model)
+    df=df_filler_model(df, df_snpp, df_model)
     
     return df, ds_snpp, ds_j1, ds_merged
     

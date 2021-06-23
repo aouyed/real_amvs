@@ -14,6 +14,7 @@ import inpainter
 import amv_calculators as calc
 import quiver
 import plotter
+import time
 ALG='farneback'
 
 
@@ -24,7 +25,7 @@ dx = R*drad
 scale_x = dx
 dy = R*drad
 scale_y = dy
-swath_hours=2
+swath_hours=8
 
 
 LABEL='specific_humidity_mean'
@@ -112,4 +113,7 @@ def main():
     ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test_3d_'+ALG+'.nc')
 
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
+

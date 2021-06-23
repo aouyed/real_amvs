@@ -19,33 +19,56 @@ from metpy.interpolate import cross_section
 
 def contourf_plotter(cross,  label, vmin, vmax):
     fig, ax = plt.subplots()
-    ax.contourf(cross['latitude'], cross['plev'], cross[label],
-                         levels=np.linspace(vmin, vmax, 10), cmap='YlGnBu')
+    im=ax.contourf(cross['latitude'], cross['plev'], cross[label],
+                         levels=np.linspace(vmin, vmax, 10), cmap='viridis')
+    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
     plt.show()
     plt.close()
 
+def latlon_uniques(ds):
+    lat,lon=np.meshgrid(ds['latitude'].values, ds['longitude'].values)
+    #ds=ds.rename({'latitude':'y','longitude':'x'})
+    ds['lat']=(['longitude','latitude'],lat)
+    ds['lon']=(['longitude','latitude'],lon)
+    condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds['humidity_overlap']))
+    ds_test=ds.where(condition1)
+    var=ds_test['lat'].values
+    uniques=np.unique(var[~np.isnan(var)])
+    print('lat unique')
+    print(uniques)
+    var=ds_test['lon'].values
+    uniques=np.unique(var[~np.isnan(var)])
+    print('lon unique')
+    print(uniques)
+    var=ds_test['humidity_overlap'].values
+    uniques=np.unique(var[~np.isnan(var)]).shape
+    print('humidity_overlap')
+    print(uniques)
+    
 
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test_3d_'+fsa.ALG+'.nc')   
     ds=ds.loc[{'day':datetime(2020,7,3),'time':'am','satellite':'snpp'}].squeeze()
     lat,lon=np.meshgrid(ds['latitude'].values, ds['longitude'].values)
-    #ds=ds.rename({'latitude':'y','longitude':'x'})
-    #ds['lat']=(['longitude','latitude'],lat)
-    #ds['lon']=(['longitude','latitude'],lon)
-    #breakpoint()
+    latlon_uniques(ds.copy())
     ds=ds.drop(['day','satellite','time','flowx','flowy','obs_time'])
+    
     ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',
     earth_radius=6371229.0)
     
     data = ds.metpy.parse_cf().squeeze()
-    print(data)
+    latlon_uniques(data.copy())
+
     #print(ds)
-    start = (-44.5, 38.5)
-    end = (-29.5, 4.5)
-    print(data)
+    start = (-44.5, -29.5)
+    end = (38.5, 4.5)
     cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
+    #cross['u_diff']
     print(cross)
+    contourf_plotter(cross,  'specific_humidity_mean', 0,0.001)
     contourf_plotter(cross,  'u_era5', -10,10)
+    contourf_plotter(cross,  'u', -10,10)
+    contourf_plotter(cross,'humidity_overlap', 0,0.001)
     
 if __name__=="__main__":
     main()
