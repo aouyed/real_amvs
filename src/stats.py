@@ -21,11 +21,11 @@ THRESHOLD=10
 
 
 def preprocess(ds, thresh):
-    ds=ds.loc[{'day':datetime(2020,7,3),'time':'pm','satellite':'j1'}]
-    ds=ds.drop(['satellite','time','day'])
+    #ds=ds.loc[{'day':datetime(2020,7,3),'time':'pm','satellite':'j1'}]
+    #ds=ds.drop(['satellite','time','day'])
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
-    ds['mag_error']=ds['u_error']**2+ds['v_error']**2
+    ds['error_mag']=ds['u_error']**2+ds['v_error']**2
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
