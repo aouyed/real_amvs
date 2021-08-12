@@ -15,6 +15,7 @@ import quiver
 import first_stage_amv as fsa
 
 
+
 R = 6371000
 
 drad = np.deg2rad(1)
@@ -22,6 +23,7 @@ dx = R*drad
 scale_x = dx
 dy = R*drad
 scale_y = dy
+np.seterr(divide='ignore')
 
 
 LABEL='specific_humidity_mean'
@@ -67,16 +69,19 @@ def prepare_ds(ds):
     ds['v'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['u_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['v_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-    ds['q_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    #ds['q_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    #ds['div_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    #ds['vort_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+
     ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
 
     return ds
 
 def swath_initializer(ds, dmins, swath_hours):   
     number=(swath_hours*60)/dmins
-    mind=ds['obs_time'].min(skipna=True).values
+    #mind=ds['obs_time'].min(skipna=True).values
+    mind=np.nanmin(ds['obs_time'].values)
     times=np.arange(dmins,dmins*number,dmins)
-    print(times)
     swathes=[]
     swathes.append([mind, mind+np.timedelta64(dmins, 'm')])
     for time in times:
@@ -155,7 +160,7 @@ def df_filler_model(df, df_sat, df_m):
     swathi=df_sat.index.values 
     df['u_era5'].loc[df.index.isin(swathi)]=df_m['u']
     df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
-    df['q_era5'].loc[df.index.isin(swathi)]=df_m['q']
+   # df['q_era5'].loc[df.index.isin(swathi)]=df_m['q']
 
     return df
     
@@ -167,7 +172,7 @@ def amv_calculator(ds_merged, df):
     ds_merged=ds_merged.where(ds_merged['specific_humidity_mean'])
     df_j1=ds_j1.to_dataframe().dropna()
     df_snpp=ds_snpp.to_dataframe().dropna()
-    df_model=ds_merged[['u','v','q']].loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
+    df_model=ds_merged[['u','v']].loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
     df=df_filler(df, df_snpp)
     df=df_filler(df, df_j1)
     df=df_filler_model(df, df_j1, df_model)

@@ -15,13 +15,30 @@ import cv2
 from dateutil.parser import parse
 import first_stage_amv as fsa 
 
-def map_plotter(ds, title, label, units_label=''):
+def map_plotter(ds, title, label, units_label='',color='viridis'):
     values=np.squeeze(ds[label].values)
     print('frame shape')
     print(values.shape)
     fig, ax = plt.subplots()
-    im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
+    im = ax.imshow(values, cmap=color, extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
+    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
+    cbar.set_label(units_label)
+    plt.xlabel("lon")
+    plt.ylabel("lat")
+    plt.savefig('../data/processed/plots/'+title+'.png',
+                bbox_inches='tight', dpi=300)
+    plt.title(label)
+    plt.show()
+    plt.close()    
+
+def map_plotter_vmax(ds, title, label, vmin, vmax, units_label='',color='viridis'):
+    values=np.squeeze(ds[label].values)
+    print('frame shape')
+    print(values.shape)
+    fig, ax = plt.subplots()
+    im = ax.imshow(values, cmap=color, extent=[ds['longitude'].min(
+        ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()], vmin=vmin, vmax=vmax)
     cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
     cbar.set_label(units_label)
     plt.xlabel("lon")
