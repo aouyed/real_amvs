@@ -17,6 +17,7 @@ import plotter
 import time
 from dask.diagnostics import ProgressBar
 import pandas as pd
+import era5_downloader as ed
 pd.options.mode.chained_assignment = None  # default='warn'
 
 ALG='farneback'
@@ -34,9 +35,21 @@ swath_hours=8
 
 LABEL='specific_humidity_mean'
 
-def model_loader(day, pressure, time):
-    print('prepared')
-    ds_model=xr.open_dataset('../data/raw/reanalysis/07_03_20.nc')
+def model_loader(date,ds):
+    date = pd.to_datetime(str(date)) 
+    year = date.strftime('%Y')
+    month = date.strftime('%m')
+    day  = date.strftime('%d')
+    ds.to_netcdf('../data/interim/'+month+'_'+day+'_'+year+'.nc')
+   
+
+
+def model_closer(date, pressure, time):
+    date = pd.to_datetime(str(date)) 
+    year = date.strftime('%Y')
+    month = date.strftime('%m')
+    day  = date.strftime('%d')
+    ds_model=xr.open_dataset('../data/interim/'+month+'_'+day+'_'+year+'.nc')
     ds_model=ds_model[['u','v']]
     #print(ds_model)
     ds_model=ds_model.sel(level=pressure, method='nearest')
@@ -52,13 +65,6 @@ def ds_unit_calc(ds, day,pressure, time):
     ds=calc.prepare_ds(ds)
     ds_model=model_loader(day,pressure, time)
  
-    #ds_model=xr.open_dataset('../data/raw/reanalysis/07_03_20_coarse.nc')
-    #ds_model=ds_model.sel(level=pressure, method='nearest')
-    #ds_model=ds_model.drop('level')
-#    ds_model = ds_model.coarsen(longitude=4, boundary='trim').mean().coarsen(
- #               latitude=4, boundary='trim').mean()
-    
-    
     df=ds.to_dataframe()
     swathes=calc.swath_initializer(ds,5,swath_hours)
     print('swathes prepared')
@@ -70,22 +76,12 @@ def ds_unit_calc(ds, day,pressure, time):
         ds_merged, ds_snpp, ds_j1, df_snpp=calc.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
    
         if (df_snpp.shape[0]>100):
-            condition2=(ds_snpp['longitude'].max()-ds_snpp['longitude'].min())<50
-                      
             df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df)
             ds_model_p1=ds_model_p[['u','v',]].loc[{'satellite':'j1'}].drop('satellite')
-            ds_model_p_test=ds_model_p[['u','v']].loc[{'satellite':'snpp'}].drop('satellite')
-           
-            #print(ds_snpp_p)
-            #quiver.quiver_plot(ds_j1_p,'j1_'+str(start),'u','v')
-            #quiver.quiver_plot(ds_snpp_p,'snpp_'+str(start),'u','v')
-            #quiver.quiver_plot(ds_model_p1,'model_'+str(start),'u','v')
-            #plotter.map_plotter(ds_j1_p,'j1_'+str(start),LABEL)
-            #plotter.map_plotter(ds_snpp_p,'snpp_'+str(start),LABEL)
-      
-
-            
+            ds_model_p_test=ds_model_p[['u','v']].loc[{'satellite':'snpp'}].drop('satellite')         
+                     
     ds=xr.Dataset.from_dataframe(df)
+    ds_model.load().close()
    
     return ds   
 
@@ -96,8 +92,10 @@ def ds_unit_calc(ds, day,pressure, time):
 
 def serial_loop(ds):
     ds_total=xr.Dataset()
-    for day in [ds['day'].values[3]]:
+    for day in ds['day'].values:
         print(day)
+        ed.downloader(day)
+        
         ds_unit=xr.Dataset()
         for pressure in ds['plev']:
             ds_unit1=xr.Dataset()
@@ -117,12 +115,7 @@ def serial_loop(ds):
                 ds_unit=ds_unit1
             else:
                 ds_unit=xr.concat([ds_unit,ds_unit1], 'plev') 
-        if not ds_total:
-            ds_total=ds_unit
-        else:
-            ds_total=xr.concat([ds_total,ds_unit], 'day')
-    print(ds_total)
-    return ds_total 
+        ds_unit.to_netcdf('../data/processed/')
 
 
 def dask_func(ds):
@@ -132,11 +125,10 @@ def dask_func(ds):
         
 def main():
     #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc', chunks={"plev": 20})
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc')
     ds_total=serial_loop(ds)
     
    
-    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc_test_3d_8'+ALG+'.nc')
 
 if __name__ == '__main__':
     start_time = time.time()

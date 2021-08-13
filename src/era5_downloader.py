@@ -1,19 +1,30 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Aug 13 16:15:10 2021
+
+@author: aouyed
+"""
 import cdsapi
 
-c = cdsapi.Client()
+import pandas as pd 
 
-days = ['01', '02', '03','04','05','06','07','08','09','10','11','12']
+def downloader(date):
+  
+    date = pd.to_datetime(str(date)) 
+    year = date.strftime('%Y')
+    month = date.strftime('%m')
+    day  = date.strftime('%d')
+    
+    c = cdsapi.Client()
 
-
-for day in days:
     c.retrieve(
         'reanalysis-era5-pressure-levels',
         {
             'product_type': 'reanalysis',
             'format': 'netcdf',
             'variable': [
-                'divergence', 'relative_humidity', 'u_component_of_wind',
-                'v_component_of_wind', 'vorticity',
+                'u_component_of_wind', 'v_component_of_wind',
             ],
             'pressure_level': [
                 '1', '2', '3',
@@ -30,8 +41,8 @@ for day in days:
                 '925', '950', '975',
                 '1000',
             ],
-            'year': '2020',
-            'month': '01',
+            'year': year,
+            'month': month,
             'day': day,
             'time': [
                 '00:00', '01:00', '02:00',
@@ -44,4 +55,4 @@ for day in days:
                 '21:00', '22:00', '23:00',
             ],
         },
-        'january_'+day +  '_era5.nc')
+        '../data/interim/'+month+'_'+day+'_'+year+'.nc')
