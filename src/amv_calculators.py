@@ -69,10 +69,8 @@ def prepare_ds(ds):
     ds['v'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['u_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['v_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-    #ds['q_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-    #ds['div_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-    #ds['vort_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-
+    ds['div_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['vort_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
 
     return ds
@@ -160,7 +158,8 @@ def df_filler_model(df, df_sat, df_m):
     swathi=df_sat.index.values 
     df['u_era5'].loc[df.index.isin(swathi)]=df_m['u']
     df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
-   # df['q_era5'].loc[df.index.isin(swathi)]=df_m['q']
+    df['vort_era5'].loc[df.index.isin(swathi)]=df_m['vorticity']
+    df['div_era5'].loc[df.index.isin(swathi)]=df_m['divergence']
 
     return df
     

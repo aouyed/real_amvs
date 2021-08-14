@@ -24,7 +24,7 @@ def downloader(date):
             'product_type': 'reanalysis',
             'format': 'netcdf',
             'variable': [
-                'u_component_of_wind', 'v_component_of_wind',
+                'u_component_of_wind', 'v_component_of_wind','divergence','vorticity'
             ],
             'pressure_level': [
                 '1', '2', '3',

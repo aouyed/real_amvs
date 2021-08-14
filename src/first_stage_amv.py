@@ -5,6 +5,7 @@ Created on Wed Mar 24 15:17:31 2021
 
 @author: aouyed
 """
+import os 
 import cv2
 import xarray as xr
 import numpy as np
@@ -30,32 +31,31 @@ dx = R*drad
 scale_x = dx
 dy = R*drad
 scale_y = dy
-swath_hours=8
+swath_hours=24
 
 
 LABEL='specific_humidity_mean'
 
-def model_loader(date,ds):
+def model_closer(date,ds):
     date = pd.to_datetime(str(date)) 
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
+    os.remove('../data/interim/'+month+'_'+day+'_'+year+'.nc')
     ds.to_netcdf('../data/interim/'+month+'_'+day+'_'+year+'.nc')
    
 
-
-def model_closer(date, pressure, time):
+def model_loader(date, pressure):
     date = pd.to_datetime(str(date)) 
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    ds_model=xr.open_dataset('../data/interim/'+month+'_'+day+'_'+year+'.nc')
-    ds_model=ds_model[['u','v']]
-    #print(ds_model)
+    ds_model=  xr_open_dataset('../data/interim/'+month+'_'+day+'_'+year+'.nc')
     ds_model=ds_model.sel(level=pressure, method='nearest')
     ds_model=ds_model.drop('level')
     ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
     ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
+    print(ds_model)
     return ds_model
     
     
@@ -63,8 +63,7 @@ def ds_unit_calc(ds, day,pressure, time):
     ds=ds.loc[{'day':day ,'plev':pressure,'time':time}]
     ds=ds.drop(['day','plev','time'])
     ds=calc.prepare_ds(ds)
-    ds_model=model_loader(day,pressure, time)
- 
+    ds_model=model_loader(day,pressure)
     df=ds.to_dataframe()
     swathes=calc.swath_initializer(ds,5,swath_hours)
     print('swathes prepared')
@@ -115,7 +114,7 @@ def serial_loop(ds):
                 ds_unit=ds_unit1
             else:
                 ds_unit=xr.concat([ds_unit,ds_unit1], 'plev') 
-        ds_unit.to_netcdf('../data/processed/')
+        model_closer(day,ds_unit)
 
 
 def dask_func(ds):
@@ -126,7 +125,7 @@ def dask_func(ds):
 def main():
     #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc', chunks={"plev": 20})
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc')
-    ds_total=serial_loop(ds)
+    serial_loop(ds)
     
    
 
