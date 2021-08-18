@@ -13,6 +13,7 @@ from metpy.units import units
 import inpainter 
 import quiver
 import first_stage_amv as fsa
+import cross_section as cs
 
 
 
@@ -71,6 +72,8 @@ def prepare_ds(ds):
     ds['v_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['div_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['vort_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['div'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['vort'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
 
     return ds
@@ -135,13 +138,16 @@ def flow_calculator(ds_snpp, ds_j1, ds_merged):
     dt_inv[dt_inv==np.inf]=np.nan
     dx_conv=abs(np.cos(np.deg2rad(ds_merged.latitude)))
     ds_merged['dt_inv']=(['latitude','longitude'],dt_inv)
+    
+    ds_snpp['dt_inv']= ds_merged['dt_inv'] 
     ds_snpp['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_snpp['flowx']
     ds_snpp['v']= scale_y*ds_merged['dt_inv']*ds_snpp['flowy']
-    ds_snpp['dt_inv']= ds_merged['dt_inv']  
+    ds_snpp=cs.grad_calculator(ds_snpp,'')
+ 
     ds_j1['dt_inv']= ds_merged['dt_inv']        
     ds_j1['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_j1['flowx']
     ds_j1['v']= scale_y*ds_merged['dt_inv']*ds_j1['flowy']
-   
+    ds_j1=cs.grad_calculator(ds_j1,'')
     return ds_snpp, ds_j1
 
 def df_filler(df, df_sat):
@@ -151,6 +157,8 @@ def df_filler(df, df_sat):
     df['flowy'].loc[df.index.isin(swathi)]=df_sat['flowy']
     df['u'].loc[df.index.isin(swathi)]=df_sat['u']
     df['v'].loc[df.index.isin(swathi)]=df_sat['v']
+    df['vort'].loc[df.index.isin(swathi)]=df_sat['vorticity']
+    df['div'].loc[df.index.isin(swathi)]=df_sat['divergence']
     df['dt_inv'].loc[df.index.isin(swathi)]=df_sat['dt_inv']
     return df
 
@@ -158,8 +166,8 @@ def df_filler_model(df, df_sat, df_m):
     swathi=df_sat.index.values 
     df['u_era5'].loc[df.index.isin(swathi)]=df_m['u']
     df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
-    df['vort_era5'].loc[df.index.isin(swathi)]=df_m['vorticity']
-    df['div_era5'].loc[df.index.isin(swathi)]=df_m['divergence']
+    df['vort_era5'].loc[df.index.isin(swathi)]=df_m['vo']
+    df['div_era5'].loc[df.index.isin(swathi)]=df_m['d']
 
     return df
     
@@ -168,10 +176,10 @@ def amv_calculator(ds_merged, df):
     ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
     ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
     ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged)
-    ds_merged=ds_merged.where(ds_merged['specific_humidity_mean'])
+    #ds_merged=ds_merged.where(ds_merged['specific_humidity_mean'])
     df_j1=ds_j1.to_dataframe().dropna()
     df_snpp=ds_snpp.to_dataframe().dropna()
-    df_model=ds_merged[['u','v']].loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
+    df_model=ds_merged.loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
     df=df_filler(df, df_snpp)
     df=df_filler(df, df_j1)
     df=df_filler_model(df, df_j1, df_model)

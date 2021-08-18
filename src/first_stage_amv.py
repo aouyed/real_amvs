@@ -41,8 +41,8 @@ def model_closer(date,ds):
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    os.remove('../data/interim/'+month+'_'+day+'_'+year+'.nc')
-    ds.to_netcdf('../data/interim/'+month+'_'+day+'_'+year+'.nc')
+    os.remove('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+    ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'.nc')
    
 
 def model_loader(date, pressure):
@@ -50,7 +50,7 @@ def model_loader(date, pressure):
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    ds_model=  xr_open_dataset('../data/interim/'+month+'_'+day+'_'+year+'.nc')
+    ds_model=  xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
     ds_model=ds_model.sel(level=pressure, method='nearest')
     ds_model=ds_model.drop('level')
     ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
@@ -72,21 +72,18 @@ def ds_unit_calc(ds, day,pressure, time):
         ds_j1=ds.loc[{'satellite':'j1'}]
         start=swath[0]
         end=swath[1]
+        print(swath[0])
         ds_merged, ds_snpp, ds_j1, df_snpp=calc.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
    
         if (df_snpp.shape[0]>100):
             df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df)
-            ds_model_p1=ds_model_p[['u','v',]].loc[{'satellite':'j1'}].drop('satellite')
-            ds_model_p_test=ds_model_p[['u','v']].loc[{'satellite':'snpp'}].drop('satellite')         
                      
     ds=xr.Dataset.from_dataframe(df)
-    ds_model.load().close()
+    ds_model.close()
    
     return ds   
 
     
-
-
 
 
 def serial_loop(ds):
@@ -100,7 +97,9 @@ def serial_loop(ds):
             ds_unit1=xr.Dataset()
             print('pressure:')
             print(pressure.item())
-            for time in ['am']:       
+            for time in ['am']:  
+                print('time')
+                print(time)
                 ds_unit0=ds_unit_calc(ds, day,pressure, time)
                 ds_unit0 = ds_unit0.expand_dims('day').assign_coords(day=np.array([day]))
                 ds_unit0 = ds_unit0.expand_dims('time').assign_coords(time=np.array([time]))

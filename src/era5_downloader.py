@@ -6,7 +6,6 @@ Created on Fri Aug 13 16:15:10 2021
 @author: aouyed
 """
 import cdsapi
-
 import pandas as pd 
 
 def downloader(date):
@@ -55,4 +54,4 @@ def downloader(date):
                 '21:00', '22:00', '23:00',
             ],
         },
-        '../data/interim/'+month+'_'+day+'_'+year+'.nc')
+        '../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
