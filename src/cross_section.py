@@ -101,6 +101,10 @@ def grad_calculator(ds, tag):
     div, vort, u, v = grad_quants(ds, 'u'+tag,'v'+tag,dx, dy)
     ds['div'] = (['latitude', 'longitude'], div)
     ds['vort'] = (['latitude', 'longitude'], vort)
+    ds['vort_smooth']= ds['vort'].rolling(latitude=5, 
+                                          longitude=5, center=True).mean()
+    ds['div_smooth']= ds['div'].rolling(latitude=5, 
+                                          longitude=5, center=True).mean()
     return ds
     
 def preprocess_loop(ds_total, tag=''):

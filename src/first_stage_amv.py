@@ -53,6 +53,10 @@ def model_loader(date, pressure):
     ds_model=  xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
     ds_model=ds_model.sel(level=pressure, method='nearest')
     ds_model=ds_model.drop('level')
+    ds_model['vort_era5_smooth']=  ds_model['vo'].rolling(
+        latitude=5, longitude=5, center=True).mean()
+    ds_model['div_era5_smooth']=  ds_model['d'].rolling(
+        latitude=5, longitude=5, center=True).mean()
     ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
     ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
     print(ds_model)

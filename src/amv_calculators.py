@@ -74,6 +74,9 @@ def prepare_ds(ds):
     ds['vort_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['div'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['vort'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['vort_era5_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['div_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['vort_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
 
     return ds
@@ -157,8 +160,10 @@ def df_filler(df, df_sat):
     df['flowy'].loc[df.index.isin(swathi)]=df_sat['flowy']
     df['u'].loc[df.index.isin(swathi)]=df_sat['u']
     df['v'].loc[df.index.isin(swathi)]=df_sat['v']
-    df['vort'].loc[df.index.isin(swathi)]=df_sat['vorticity']
-    df['div'].loc[df.index.isin(swathi)]=df_sat['divergence']
+    df['vort'].loc[df.index.isin(swathi)]=df_sat['vort']
+    df['div'].loc[df.index.isin(swathi)]=df_sat['div']
+    df['vort_smooth'].loc[df.index.isin(swathi)]=df_sat['vort_smooth']
+    df['div_smooth'].loc[df.index.isin(swathi)]=df_sat['div_smooth']
     df['dt_inv'].loc[df.index.isin(swathi)]=df_sat['dt_inv']
     return df
 
@@ -168,6 +173,9 @@ def df_filler_model(df, df_sat, df_m):
     df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
     df['vort_era5'].loc[df.index.isin(swathi)]=df_m['vo']
     df['div_era5'].loc[df.index.isin(swathi)]=df_m['d']
+    df['vort_era5_smooth'].loc[df.index.isin(swathi)]=df_m['vort_era5_smooth']
+    df['div_era5_smooth'].loc[df.index.isin(swathi)]=df_m['div_era5_smooth']
+
 
     return df
     
