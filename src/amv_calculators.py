@@ -75,6 +75,7 @@ def prepare_ds(ds):
     ds['div'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['vort'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['vort_era5_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+    ds['div_era5_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['div_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['vort_smooth'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
@@ -100,7 +101,7 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     model_t=start+np.timedelta64(25, 'm')
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
-    ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+    ds_j1=ds_j1.where((ds_j1.obs_time > start) & +(ds_j1.obs_time<end))
     
     
     
@@ -185,8 +186,10 @@ def amv_calculator(ds_merged, df):
     ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
     ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged)
     #ds_merged=ds_merged.where(ds_merged['specific_humidity_mean'])
-    df_j1=ds_j1.to_dataframe().dropna()
-    df_snpp=ds_snpp.to_dataframe().dropna()
+    #df_j1=ds_j1.to_dataframe().dropna()
+    #df_snpp=ds_snpp.to_dataframe().dropna()
+    df_j1=ds_j1.to_dataframe()
+    df_snpp=ds_snpp.to_dataframe()
     df_model=ds_merged.loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
     df=df_filler(df, df_snpp)
     df=df_filler(df, df_j1)

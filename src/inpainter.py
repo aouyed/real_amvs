@@ -13,6 +13,7 @@ def drop_nan(frame):
     mask=np.isnan(frame)
     mask = np.uint8(mask)
     frame = np.nan_to_num(frame)
+    frame=np.float32(frame)
     frame = cv2.inpaint(frame, mask, inpaintRadius=10, flags=cv2.INPAINT_NS)
     return frame
 

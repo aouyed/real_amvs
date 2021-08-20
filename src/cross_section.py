@@ -39,31 +39,22 @@ def preprocess(ds, thresh):
    
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
-    ds['vort_error']=ds['vort']-ds['vort_era5']
-    ds['div_error']=ds['div']-ds['div_era5']
+    #ds['vort_error']=ds['vort']-ds['vort_era5']
+    #ds['div_error']=ds['div']-ds['div_era5']
     ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
     ds['shear']=shear_calc(ds)
     ds['shear_era5']=shear_calc(ds,tag='_era5')
-    ds['diff_vort']=ds['vort'].diff('plev')
-    ds['diff_div']=ds['div'].diff('plev')
-    ds['diff_vort_era5']=ds['vort_era5'].diff('plev')
-    ds['diff_div_era5']=ds['div_era5'].diff('plev')
-    ds['diff_div_error']=ds['diff_div']-ds['diff_div_era5']
-    ds['diff_vort_error']=ds['diff_vort']-ds['diff_vort_era5']
+   # ds['diff_vort']=ds['vort'].diff('plev')
+   # ds['diff_div']=ds['div'].diff('plev')
+   # ds['diff_vort_era5']=ds['vort_era5'].diff('plev')
+   # ds['diff_div_era5']=ds['div_era5'].diff('plev')
+   # ds['diff_div_error']=ds['diff_div']-ds['diff_div_era5']
+   # ds['diff_vort_error']=ds['diff_vort']-ds['diff_vort_era5']
     ds=ds.where(ds.error_mag<thresh)
     #ds=ds.where(abs(ds.div_error)<0.1)
-
-    print('stats')
-    print(abs(ds['diff_vort_error']).mean())
-    print(abs(ds['diff_vort']).mean())
-    #ds=ds.where(abs(ds.diff_vort_error)<0.02)
-    print(abs(ds['diff_vort_error']).mean())
-    print(abs(ds['diff_vort']).mean())
-    print(abs(ds['diff_vort_era5']).mean())
-
     return ds
 
 def vel_filter(u, v):
@@ -102,9 +93,11 @@ def grad_calculator(ds, tag):
     ds['div'] = (['latitude', 'longitude'], div)
     ds['vort'] = (['latitude', 'longitude'], vort)
     ds['vort_smooth']= ds['vort'].rolling(latitude=5, 
-                                          longitude=5, center=True).mean()
+                                         longitude=5, center=True).mean()
     ds['div_smooth']= ds['div'].rolling(latitude=5, 
                                           longitude=5, center=True).mean()
+    #ds['vort_smooth']= ds['vort']
+    #ds['div_smooth']= ds['div']
     return ds
     
 def preprocess_loop(ds_total, tag=''):
@@ -146,14 +139,14 @@ def quiver_plot(ds, title, u, v):
     plt.close()
 
 def div_calc(u, v, dx, dy):
-    div = mpcalc.div(u * units['m/s'], v * units['m/s'], 
+    div = mpcalc.divergence(u * units['m/s'], v * units['m/s'], 
                             dx=dx, dy=dy)
     div = SCALE*div.magnitude
     return u, v, div
 
 
 def vort_calc(u, v, dx, dy):
-    vort = mpcalc.vort(
+    vort = mpcalc.vorticity(
         u * units['m/s'], v * units['m/s'], dx=dx, dy=dy)
     vort = SCALE*vort.magnitude
     
@@ -197,12 +190,14 @@ def latlon_uniques(ds):
 def main():
     ds=xr.open_dataset('../data/processed/07_01_2020.nc')   
     ds=ds.loc[{'day':datetime(2020,7,1),'time':'am','satellite':'snpp'}].squeeze()
-    ds=preprocess_loop(ds)
+    #ds=preprocess_loop(ds)
         #ds=xr.open_dataset('../data/interim/cross.nc')
     ds['vort_era5']=SCALE* ds['vort_era5']
     ds['div_era5']=SCALE* ds['div_era5']
+    #ds['vort_era5_smooth']=SCALE* ds['vort_era5_smooth']
+    #ds['div_era5_smooth']=SCALE* ds['div_era5_smooth']
 
-    ds=preprocess_loop(ds,'_era5')
+    #ds=preprocess_loop(ds,'_era5')
 
     #ds=preprocess_loop(ds, tag='_era5')
     #ds.to_netcdf('../data/interim/cross.nc')
@@ -211,17 +206,18 @@ def main():
     
    
 
-    ds['diff_vort_lowres']=ds['vort'].sel(plev=300, method='nearest')-ds['vort'].sel(plev=850, method='nearest')
-    plotter.map_plotter(ds.sel(plev=850, method='nearest'),
-                        'div_map', 'div', units_label='')
-    ds['diff_vort_era5_lowres']=ds['vort_era5'].sel(plev=300, method='nearest')-ds['vort_era5'].sel(plev=850, method='nearest')
-    ds_coarse=ds.coarsen(latitude=5, longitude=5, boundary="trim").mean()
+    #s['diff_vort_lowres']=ds['vort'].sel(plev=300, method='nearest')-ds['vort'].sel(plev=850, method='nearest')
+    #plotter.map_plotter(ds.sel(plev=850, method='nearest'),
+     #                   'div_map', 'div', units_label='')
+    #ds['diff_vort_era5_lowres']=ds['vort_era5'].sel(plev=300, method='nearest')-ds['vort_era5'].sel(plev=850, method='nearest')
+    #ds_coarse=ds.coarsen(latitude=5, longitude=5, boundary="trim").mean()
     plotter.map_plotter(ds.sel(plev=850, method='nearest'),
                         'humidity_overlap_map', 'humidity_overlap', units_label='')
-    plotter.map_plotter_vmax(ds.sel(plev=850, method='nearest'),'vort_map', 'vort',-0.1,0.1 ,color='RdBu')
-    plotter.map_plotter_vmax(ds.sel(plev=850,method='nearest'),'vort_era5_map', 'vort_era5',-0.1,0.1 ,color='RdBu')
-    plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_smooth_map', 'vort_smooth',-0.05,0.05 ,color='RdBu')
-    plotter.map_plotter_vmax(ds.sel(plev=500,method='nearest'),'vort_era5_smooth_map', 'vort_era5_smooth',-0.1,0.1,color='RdBu')
+    breakpoint()
+    #plotter.map_plotter_vmax(ds.sel(plev=850, method='nearest'),'vort_map', 'vort',-0.1,0.1 ,color='RdBu')
+    #plotter.map_plotter_vmax(ds.sel(plev=850,method='nearest'),'vort_era5_map', 'vort_era5',-0.1,0.1 ,color='RdBu')
+    #plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_smooth_map', 'vort_smooth',-0.05,0.05 ,color='RdBu')
+    #plotter.map_plotter_vmax(ds.sel(plev=500,method='nearest'),'vort_era5_smooth_map', 'vort_era5_smooth',-0.1,0.1,color='RdBu')
 
     quiver.quiver_plot(ds_coarse.sel(plev=850,method='nearest'), 'quivermap', 'u', 'v')
     quiver.quiver_plot(ds_coarse.sel(plev=850,method='nearest'), 'quivermap_era5', 'u_era5', 'v_era5')
@@ -256,8 +252,8 @@ def main():
     contourf_plotter(cross,'humidity_overlap', 0,0.001)
     contourf_plotter(cross,'div', -0.1,0.1, color='RdBu')
     contourf_plotter(cross,'vort', -0.1,0.1, color='RdBu')
-    contourf_plotter(cross,'vort_smooth', -0.01,0.01, color='RdBu')
-    contourf_plotter(cross,'vort_era5_smooth', -0.01,0.01, color='RdBu')
+    #contourf_plotter(cross,'vort_smooth', -0.01,0.01, color='RdBu')
+    #contourf_plotter(cross,'vort_era5_smooth', -0.01,0.01, color='RdBu')
 
     contourf_plotter(cross,'div_era5', -0.15,0.15, color='RdBu')
     contourf_plotter(cross,'vort_era5', -0.15,0.15, color='RdBu')
