@@ -21,7 +21,10 @@ import inpainter
 import plotter 
 import quiver 
 
+
 SCALE=1e4
+
+
 
 def shear_calc(ds, tag=''):
     u_diff=ds['u'+tag].diff('plev')
@@ -32,9 +35,11 @@ def shear_calc(ds, tag=''):
 def preprocess(ds, thresh):
     #ds=ds.loc[{'day':datetime(2020,7,3),'time':'pm','satellite':'j1'}]
     #ds=ds.drop(['satellite','time','day'])
-    #ds['vort_smooth']=ds['vort'].rolling(latitude= 5, longitude=5, center=True).mean()
-    #ds['vort_era5_smooth']=ds['vort_era5'].rolling(latitude= 5, longitude=5, center=True).mean()
-    #ds['div_smooth']=ds['div'].rolling(latitude= 5, longitude=5, center=True).mean()
+    ds['vort_smooth']=ds['vort_inpainted'].rolling(latitude= 5, longitude=5, center=True).mean()
+    
+    condition=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds['humidity_overlap']))
+    ds['vort_smooth']=ds['vort_smooth'].where(condition)                                        
+    ds['div_smooth']=ds['div'].rolling(latitude= 5, longitude=5, center=True).mean()
     #ds['div_era5_smooth']=ds['div_era5'].rolling(latitude= 5, longitude=5, center=True).mean()
    
     ds['u_error']=ds['u']-ds['u_era5']
@@ -96,8 +101,7 @@ def grad_calculator(ds, tag):
                                          longitude=5, center=True).mean()
     ds['div_smooth']= ds['div'].rolling(latitude=5, 
                                           longitude=5, center=True).mean()
-    #ds['vort_smooth']= ds['vort']
-    #ds['div_smooth']= ds['div']
+
     return ds
     
 def preprocess_loop(ds_total, tag=''):
@@ -194,13 +198,15 @@ def main():
         #ds=xr.open_dataset('../data/interim/cross.nc')
     ds['vort_era5']=SCALE* ds['vort_era5']
     ds['div_era5']=SCALE* ds['div_era5']
-    #ds['vort_era5_smooth']=SCALE* ds['vort_era5_smooth']
-    #ds['div_era5_smooth']=SCALE* ds['div_era5_smooth']
+    ds['vort_era5_smooth']=SCALE*ds['vort_era5_smooth']
+    ds['div_era5_smooth']=SCALE*ds['div_era5_smooth']
 
     #ds=preprocess_loop(ds,'_era5')
 
     #ds=preprocess_loop(ds, tag='_era5')
     #ds.to_netcdf('../data/interim/cross.nc')
+    ds=inpainter.inpainter_loop(ds, 'vort')
+    plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_inpainted_map', 'vort_inpainted',-0.01,0.01 ,color='RdBu')
 
     ds=preprocess(ds,10)
     
@@ -213,14 +219,14 @@ def main():
     #ds_coarse=ds.coarsen(latitude=5, longitude=5, boundary="trim").mean()
     plotter.map_plotter(ds.sel(plev=850, method='nearest'),
                         'humidity_overlap_map', 'humidity_overlap', units_label='')
-    breakpoint()
+    
     #plotter.map_plotter_vmax(ds.sel(plev=850, method='nearest'),'vort_map', 'vort',-0.1,0.1 ,color='RdBu')
     #plotter.map_plotter_vmax(ds.sel(plev=850,method='nearest'),'vort_era5_map', 'vort_era5',-0.1,0.1 ,color='RdBu')
-    #plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_smooth_map', 'vort_smooth',-0.05,0.05 ,color='RdBu')
-    #plotter.map_plotter_vmax(ds.sel(plev=500,method='nearest'),'vort_era5_smooth_map', 'vort_era5_smooth',-0.1,0.1,color='RdBu')
+    plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_smooth_map', 'vort_smooth',-0.01,0.01 ,color='RdBu')
+    plotter.map_plotter_vmax(ds.sel(plev=500,method='nearest'),'vort_era5_smooth_map', 'vort_era5_smooth',-1,1,color='RdBu')
 
-    quiver.quiver_plot(ds_coarse.sel(plev=850,method='nearest'), 'quivermap', 'u', 'v')
-    quiver.quiver_plot(ds_coarse.sel(plev=850,method='nearest'), 'quivermap_era5', 'u_era5', 'v_era5')
+    quiver.quiver_plot(ds.sel(plev=850,method='nearest'), 'quivermap', 'u', 'v')
+    quiver.quiver_plot(ds.sel(plev=850,method='nearest'), 'quivermap_era5', 'u_era5', 'v_era5')
 
     lat,lon=np.meshgrid(ds['latitude'].values, ds['longitude'].values)
     latlon_uniques(ds.copy())
@@ -237,8 +243,8 @@ def main():
     #end = (38.5, 4.5)
     #start = (-44.5, -29.5)
     #end = (38.5, 4.5)
-    start = (6.5, -149.5)
-    end = (6.5, 4.5)
+    start = (26, -140)
+    end = (26, -60)
     #start = (6.5, 0)
     #end = (6.5, 150)
     cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
@@ -252,23 +258,23 @@ def main():
     contourf_plotter(cross,'humidity_overlap', 0,0.001)
     contourf_plotter(cross,'div', -0.1,0.1, color='RdBu')
     contourf_plotter(cross,'vort', -0.1,0.1, color='RdBu')
-    #contourf_plotter(cross,'vort_smooth', -0.01,0.01, color='RdBu')
-    #contourf_plotter(cross,'vort_era5_smooth', -0.01,0.01, color='RdBu')
-
-    contourf_plotter(cross,'div_era5', -0.15,0.15, color='RdBu')
-    contourf_plotter(cross,'vort_era5', -0.15,0.15, color='RdBu')
-    contourf_plotter(cross,'vort_error', -0.15,0.15, color='RdBu')
-    contourf_plotter(cross,'div_error', -0.15,0.15, color='RdBu')
-    contourf_plotter(cross,'diff_vort', -0.05,0.05, color='RdBu')
-    contourf_plotter(cross,'diff_div', -0.05,0.05, color='RdBu')
-    contourf_plotter(cross,'diff_vort_era5', -0.05,0.05, color='RdBu')
-    contourf_plotter(cross,'diff_div_era5', -0.05,0.05, color='RdBu')
-    contourf_plotter(cross,'diff_vort_error', -0.02,0.02, color='RdBu')
-    contourf_plotter(cross,'diff_div_error', -0.02,0.02, color='RdBu')
-    contourf_plotter(cross,'shear', 0,6)
-    contourf_plotter(cross,'shear_era5', 0,6)
-    quiver_plot(cross, 'cross', 'u', 'v')
-    quiver_plot(cross, 'cross_era5', 'u_era5', 'v_era5')
+    contourf_plotter(cross,'vort_smooth', -1,1, color='RdBu')
+    contourf_plotter(cross,'vort_era5_smooth', -1,1, color='RdBu')
+    
+    # contourf_plotter(cross,'div_era5', -0.15,0.15, color='RdBu')
+    # contourf_plotter(cross,'vort_era5', -0.15,0.15, color='RdBu')
+    # contourf_plotter(cross,'vort_error', -0.15,0.15, color='RdBu')
+    # contourf_plotter(cross,'div_error', -0.15,0.15, color='RdBu')
+    # contourf_plotter(cross,'diff_vort', -0.05,0.05, color='RdBu')
+    # contourf_plotter(cross,'diff_div', -0.05,0.05, color='RdBu')
+    # contourf_plotter(cross,'diff_vort_era5', -0.05,0.05, color='RdBu')
+    # contourf_plotter(cross,'diff_div_era5', -0.05,0.05, color='RdBu')
+    # contourf_plotter(cross,'diff_vort_error', -0.02,0.02, color='RdBu')
+    # contourf_plotter(cross,'diff_div_error', -0.02,0.02, color='RdBu')
+    # contourf_plotter(cross,'shear', 0,6)
+    # contourf_plotter(cross,'shear_era5', 0,6)
+    # quiver_plot(cross, 'cross', 'u', 'v')
+    # quiver_plot(cross, 'cross_era5', 'u_era5', 'v_era5')
 
     
 if __name__=="__main__":

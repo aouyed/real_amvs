@@ -92,7 +92,7 @@ def ds_unit_calc(ds, day,pressure, time):
 
 def serial_loop(ds):
     ds_total=xr.Dataset()
-    for day in ds['day'].values:
+    for day in ds['day'].values[5:]:
         print(day)
         ed.downloader(day)
         
