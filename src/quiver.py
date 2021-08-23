@@ -13,6 +13,7 @@ import first_stage_amv as fsa
 from datetime import datetime 
 
 def quiver_plot(ds, title, u, v):
+    ds=ds.coarsen(latitude=5, longitude=5, boundary='trim').mean()
     fig, ax = plt.subplots()
     X, Y = np.meshgrid(ds['longitude'].values, ds['latitude'].values)
     ax.set_title(title)

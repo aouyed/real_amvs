@@ -23,6 +23,9 @@ import quiver
 
 
 SCALE=1e4
+PRESSURES=[850, 750, 650, 550]
+GEODESICS={'equator':[(-47.5, -60), (45, -30)],
+                'swath':[(6.5, -149.5),(6.5, 4.5)]}
 
 
 
@@ -33,33 +36,16 @@ def shear_calc(ds, tag=''):
     return shear
     
 def preprocess(ds, thresh):
-    #ds=ds.loc[{'day':datetime(2020,7,3),'time':'pm','satellite':'j1'}]
-    #ds=ds.drop(['satellite','time','day'])
-    ds['vort_smooth']=ds['vort_inpainted'].rolling(latitude= 5, longitude=5, center=True).mean()
-    
-    condition=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds['humidity_overlap']))
-    ds['vort_smooth']=ds['vort_smooth'].where(condition)                                        
-    ds['div_smooth']=ds['div'].rolling(latitude= 5, longitude=5, center=True).mean()
-    #ds['div_era5_smooth']=ds['div_era5'].rolling(latitude= 5, longitude=5, center=True).mean()
-   
+ 
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
-    #ds['vort_error']=ds['vort']-ds['vort_era5']
-    #ds['div_error']=ds['div']-ds['div_era5']
     ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
     ds['shear']=shear_calc(ds)
     ds['shear_era5']=shear_calc(ds,tag='_era5')
-   # ds['diff_vort']=ds['vort'].diff('plev')
-   # ds['diff_div']=ds['div'].diff('plev')
-   # ds['diff_vort_era5']=ds['vort_era5'].diff('plev')
-   # ds['diff_div_era5']=ds['div_era5'].diff('plev')
-   # ds['diff_div_error']=ds['diff_div']-ds['diff_div_era5']
-   # ds['diff_vort_error']=ds['diff_vort']-ds['diff_vort_era5']
     ds=ds.where(ds.error_mag<thresh)
-    #ds=ds.where(abs(ds.div_error)<0.1)
     return ds
 
 def vel_filter(u, v):
@@ -104,26 +90,6 @@ def grad_calculator(ds, tag):
 
     return ds
     
-def preprocess_loop(ds_total, tag=''):
-    tag_s=tag+'_smooth'
-    ds_total['vort'+tag_s]= xr.full_like(ds_total['specific_humidity_mean'], fill_value=np.nan)
-    ds_total['div'+tag_s]= xr.full_like(ds_total['specific_humidity_mean'], fill_value=np.nan)
-    pressures = ds_total['plev'].values
-    for pressure in pressures:
-        print(pressure)
-        print(pressures.shape)
-        ds_unit=ds_total.sel(plev=pressure, method='nearest')
-        vort= ds_unit['vort'+tag].values
-        div=ds_unit['vort'+tag].values
-        vort,div=vel_filter(vort, div)
-        ds_unit['vort'+tag_s]=(['latitude', 'longitude'], vort)
-        ds_unit['div'+tag_s]=(['latitude', 'longitude'], div)
-
-        
-        ds_total['vort'+tag_s].loc[{'plev': pressure}]=ds_unit['vort'+tag_s]
-        ds_total['div'+tag_s].loc[{'plev':pressure}]=ds_unit['div'+tag_s]
-
-    return ds_total
 
 def quiver_plot(ds, title, u, v):
     ds = ds.coarsen(index=2, boundary='trim').mean().coarsen(
@@ -157,14 +123,14 @@ def vort_calc(u, v, dx, dy):
     return u, v, vort
 
 
-def contourf_plotter(cross,  label, vmin, vmax, color='viridis'):
+def contourf_plotter(cross,  label, geo, vmin, vmax, color='viridis'):
     fig, ax = plt.subplots()
     im=ax.contourf(cross['longitude'], cross['plev'], cross[label],
                          levels=np.linspace(vmin, vmax, 10), cmap=color)
     cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
     ax.set_title(label)
     ax.set_ylim(ax.get_ylim()[::-1])
-    plt.savefig('../data/processed/plots/'+label+'.png',
+    plt.savefig('../data/processed/plots/'+label+'_'+geo+'.png',
                 bbox_inches='tight', dpi=300)
     plt.show()
 
@@ -172,7 +138,6 @@ def contourf_plotter(cross,  label, vmin, vmax, color='viridis'):
 
 def latlon_uniques(ds):
     lat,lon=np.meshgrid(ds['latitude'].values, ds['longitude'].values)
-    #ds=ds.rename({'latitude':'y','longitude':'x'})
     ds['lat']=(['longitude','latitude'],lat)
     ds['lon']=(['longitude','latitude'],lon)
     condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds['humidity_overlap']))
@@ -190,92 +155,48 @@ def latlon_uniques(ds):
     print('humidity_overlap')
     print(uniques)
     
+    
+def map_loop(ds):
+    for pressure in PRESSURES:
+        plotter.map_plotter(ds.sel(plev=pressure, method='nearest'),
+                            'humidity_overlap_map_'+str(pressure), 'humidity_overlap', units_label='')
+        plotter.map_plotter_vmax(ds.sel(plev=pressure, method='nearest'),
+                            'shear_'+str(pressure), 'shear',0,6, units_label='')
+        plotter.map_plotter_vmax(ds.sel(plev=pressure, method='nearest'),
+                            'shear_era5_'+str(pressure), 'shear_era5',0,6, units_label='')
+        quiver.quiver_plot(ds.sel(plev=pressure,method='nearest'), 'quivermap_'+str(pressure), 'u', 'v')
+        quiver.quiver_plot(ds.sel(plev=pressure,method='nearest'), 'quivermap_era5_'+str(pressure), 'u_era5', 'v_era5')
+
+   
+
+def cross_sequence(ds):
+    ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',earth_radius=6371229.0)
+    data = ds.metpy.parse_cf().squeeze()
+    latlon_uniques(data.copy())
+    for geokey in GEODESICS:
+        geodesic=GEODESICS[geokey]
+        start=geodesic[0]
+        end=geodesic[1]
+        cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
+        cross=cross.reindex(plev=list(reversed(cross.plev)))
+        contourf_plotter(cross,  'error_mag', geokey,  0,5)
+        quiver_plot(cross, 'quiver_'+geokey, 'u', 'v')
+        quiver_plot(cross, 'quiver_era5_'+geokey, 'u_era5', 'v_era5')
+
+    
 
 def main():
     ds=xr.open_dataset('../data/processed/07_01_2020.nc')   
     ds=ds.loc[{'day':datetime(2020,7,1),'time':'am','satellite':'snpp'}].squeeze()
-    #ds=preprocess_loop(ds)
-        #ds=xr.open_dataset('../data/interim/cross.nc')
     ds['vort_era5']=SCALE* ds['vort_era5']
     ds['div_era5']=SCALE* ds['div_era5']
     ds['vort_era5_smooth']=SCALE*ds['vort_era5_smooth']
     ds['div_era5_smooth']=SCALE*ds['div_era5_smooth']
-
-    #ds=preprocess_loop(ds,'_era5')
-
-    #ds=preprocess_loop(ds, tag='_era5')
-    #ds.to_netcdf('../data/interim/cross.nc')
-    ds=inpainter.inpainter_loop(ds, 'vort')
-    plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_inpainted_map', 'vort_inpainted',-0.01,0.01 ,color='RdBu')
-
     ds=preprocess(ds,10)
-    
-   
-
-    #s['diff_vort_lowres']=ds['vort'].sel(plev=300, method='nearest')-ds['vort'].sel(plev=850, method='nearest')
-    #plotter.map_plotter(ds.sel(plev=850, method='nearest'),
-     #                   'div_map', 'div', units_label='')
-    #ds['diff_vort_era5_lowres']=ds['vort_era5'].sel(plev=300, method='nearest')-ds['vort_era5'].sel(plev=850, method='nearest')
-    #ds_coarse=ds.coarsen(latitude=5, longitude=5, boundary="trim").mean()
-    plotter.map_plotter(ds.sel(plev=850, method='nearest'),
-                        'humidity_overlap_map', 'humidity_overlap', units_label='')
-    
-    #plotter.map_plotter_vmax(ds.sel(plev=850, method='nearest'),'vort_map', 'vort',-0.1,0.1 ,color='RdBu')
-    #plotter.map_plotter_vmax(ds.sel(plev=850,method='nearest'),'vort_era5_map', 'vort_era5',-0.1,0.1 ,color='RdBu')
-    plotter.map_plotter_vmax(ds.sel(plev=500, method='nearest'),'vort_smooth_map', 'vort_smooth',-0.01,0.01 ,color='RdBu')
-    plotter.map_plotter_vmax(ds.sel(plev=500,method='nearest'),'vort_era5_smooth_map', 'vort_era5_smooth',-1,1,color='RdBu')
-
-    quiver.quiver_plot(ds.sel(plev=850,method='nearest'), 'quivermap', 'u', 'v')
-    quiver.quiver_plot(ds.sel(plev=850,method='nearest'), 'quivermap_era5', 'u_era5', 'v_era5')
-
-    lat,lon=np.meshgrid(ds['latitude'].values, ds['longitude'].values)
-    latlon_uniques(ds.copy())
     ds=ds.drop(['day','satellite','time','flowx','flowy','obs_time'])
-    
-    ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',
-    earth_radius=6371229.0)
-    
-    data = ds.metpy.parse_cf().squeeze()
-    latlon_uniques(data.copy())
-
-    #print(ds)
-    #start = (-44.5, -29.5)
-    #end = (38.5, 4.5)
-    #start = (-44.5, -29.5)
-    #end = (38.5, 4.5)
-    start = (26, -140)
-    end = (26, -60)
-    #start = (6.5, 0)
-    #end = (6.5, 150)
-    cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
-    cross=cross.reindex(plev=list(reversed(cross.plev)))
-    #cross['u_diff']
-    print(cross)
-    contourf_plotter(cross,  'specific_humidity_mean', 0,0.001)
-    contourf_plotter(cross,  'u_era5', -10,10)
-    contourf_plotter(cross,  'u', -10,10)
-    contourf_plotter(cross,  'error_mag', 0,5)
-    contourf_plotter(cross,'humidity_overlap', 0,0.001)
-    contourf_plotter(cross,'div', -0.1,0.1, color='RdBu')
-    contourf_plotter(cross,'vort', -0.1,0.1, color='RdBu')
-    contourf_plotter(cross,'vort_smooth', -1,1, color='RdBu')
-    contourf_plotter(cross,'vort_era5_smooth', -1,1, color='RdBu')
-    
-    # contourf_plotter(cross,'div_era5', -0.15,0.15, color='RdBu')
-    # contourf_plotter(cross,'vort_era5', -0.15,0.15, color='RdBu')
-    # contourf_plotter(cross,'vort_error', -0.15,0.15, color='RdBu')
-    # contourf_plotter(cross,'div_error', -0.15,0.15, color='RdBu')
-    # contourf_plotter(cross,'diff_vort', -0.05,0.05, color='RdBu')
-    # contourf_plotter(cross,'diff_div', -0.05,0.05, color='RdBu')
-    # contourf_plotter(cross,'diff_vort_era5', -0.05,0.05, color='RdBu')
-    # contourf_plotter(cross,'diff_div_era5', -0.05,0.05, color='RdBu')
-    # contourf_plotter(cross,'diff_vort_error', -0.02,0.02, color='RdBu')
-    # contourf_plotter(cross,'diff_div_error', -0.02,0.02, color='RdBu')
-    # contourf_plotter(cross,'shear', 0,6)
-    # contourf_plotter(cross,'shear_era5', 0,6)
-    # quiver_plot(cross, 'cross', 'u', 'v')
-    # quiver_plot(cross, 'cross_era5', 'u_era5', 'v_era5')
-
+    map_loop(ds)
+    cross_sequence(ds)
+   
     
 if __name__=="__main__":
     main()
