@@ -36,13 +36,13 @@ swath_hours=24
 
 LABEL='specific_humidity_mean'
 
-def model_closer(date,ds):
+def model_closer(date,ds,time):
     date = pd.to_datetime(str(date)) 
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
     os.remove('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
-    ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'.nc')
+    ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'_'+time+'.nc')
    
 
 def model_loader(date, pressure):
@@ -92,7 +92,7 @@ def ds_unit_calc(ds, day,pressure, time):
 
 def serial_loop(ds):
     ds_total=xr.Dataset()
-    for day in ds['day'].values[5:]:
+    for day in ds['day'].values:
         print(day)
         ed.downloader(day)
         
@@ -101,7 +101,7 @@ def serial_loop(ds):
             ds_unit1=xr.Dataset()
             print('pressure:')
             print(pressure.item())
-            for time in ['am']:  
+            for time in ['pm']:  
                 print('time')
                 print(time)
                 ds_unit0=ds_unit_calc(ds, day,pressure, time)
@@ -117,7 +117,7 @@ def serial_loop(ds):
                 ds_unit=ds_unit1
             else:
                 ds_unit=xr.concat([ds_unit,ds_unit1], 'plev') 
-        model_closer(day,ds_unit)
+        model_closer(day,ds_unit,time)
 
 
 def dask_func(ds):

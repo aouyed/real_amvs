@@ -11,9 +11,10 @@ import numpy as np
 from datetime import datetime
 from datetime import timedelta
 
-PATH='../data/raw/CLIMCAPS_winds/'
+PATH='../data/raw/CLIMCAPS_july/'
 label='specific_humidity_mu'
 labels=['specific_humidity_mean','specific_humidity_sdev']
+QC='qc'
 def regridder(ds):
     latmax = ds['latitude'].max().item()
     latmin = ds['latitude'].min().item()
@@ -46,7 +47,7 @@ def ds_unit_calc(day,time,satellite):
     print(day_string)
     d0=datetime(1993, 1, 1)   
     
-    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg_noqc.nc')
+    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg_'+QC+'.nc')
     
     #ds=regridder(ds)   
     
@@ -98,8 +99,7 @@ def time_loop(times, satellites, day):
 def main():
     times=['am','pm']
     satellites=['j1','snpp']
-    days=[datetime(2020,1,1),datetime(2020,1,2),
-    datetime(2020,7,1),datetime(2020,7,3)]
+    days=[datetime(2020,7,1)]
 
     ds_total=xr.Dataset() 
     for day in days:    
@@ -111,7 +111,7 @@ def main():
             ds_total = xr.concat([ds_total, ds_unit], 'day')
     print(ds_total)
     #ds_total=ds_total.transpose()
-    ds_total.to_netcdf('../data/processed/real_water_vapor_noqc.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_'+QC+'.nc')
  
     
 if __name__=="__main__":

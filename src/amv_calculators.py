@@ -197,5 +197,53 @@ def amv_calculator(ds_merged, df):
     df=df_filler_model(df, df_snpp, df_model)
     
     return df, ds_snpp, ds_j1, ds_merged
+
+
+def grad_quants(ds,ulabel,vlabel, dx,dy):
+    u = ds[ulabel].values
+    v = ds[vlabel].values
+    u = np.squeeze(u)
+    v = np.squeeze(v)
+    mask=np.isnan(u)
+    u,v=vel_filter(u, v)
+    u, v, div = div_calc(
+        u, v, dx, dy)
+    u, v, vort =vort_calc(
+        u, v, dx, dy)
+    div[mask]=np.nan
+    vort[mask]=np.nan
+    return div, vort, u, v
+
+
+def grad_calculator(ds, tag):
+    lat = ds.latitude.values
+    lon = ds.longitude.values
+    dx, dy = mpcalc.lat_lon_grid_deltas(lon, lat)
+    div, vort, u, v = grad_quants(ds, 'u'+tag,'v'+tag,dx, dy)
+    ds['div'] = (['latitude', 'longitude'], div)
+    ds['vort'] = (['latitude', 'longitude'], vort)
+    ds['vort_smooth']= ds['vort'].rolling(latitude=5, 
+                                         longitude=5, center=True).mean()
+    ds['div_smooth']= ds['div'].rolling(latitude=5, 
+                                          longitude=5, center=True).mean()
+
+    return ds
+    
+def vort_calc(u, v, dx, dy):
+    vort = mpcalc.vorticity(
+        u * units['m/s'], v * units['m/s'], dx=dx, dy=dy)
+    vort = SCALE*vort.magnitude
+    
+    return u, v, vort
+
+
+def div_calc(u, v, dx, dy):
+    div = mpcalc.divergence(u * units['m/s'], v * units['m/s'], 
+                            dx=dx, dy=dy)
+    div = SCALE*div.magnitude
+    return u, v, div
+
+
+
     
 
