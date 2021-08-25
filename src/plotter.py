@@ -14,11 +14,29 @@ import numpy as np
 import cv2
 from dateutil.parser import parse
 import first_stage_amv as fsa 
+import cartopy.crs as ccrs
+
+
+
+
+def map_plotter_cartopy(ds, title, label,vmin, vmax,  units_label=''):
+    values=np.squeeze(ds[label].values)
+    fig, ax = plt.subplots()
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax.coastlines()
+    ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
+    im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
+        ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()], vmin=vmin, vmax=vmax)
+    plt.title(label)
+    cbar_ax = fig.add_axes([0.1, 0.05, 0.78, 0.05])
+    fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
+    plt.savefig('../data/processed/plots/'+title+'.png',
+                bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()  
 
 def map_plotter(ds, title, label, units_label='',color='viridis'):
     values=np.squeeze(ds[label].values)
-    print('frame shape')
-    print(values.shape)
     fig, ax = plt.subplots()
     im = ax.imshow(values, cmap=color, extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
@@ -34,8 +52,6 @@ def map_plotter(ds, title, label, units_label='',color='viridis'):
 
 def map_plotter_vmax(ds, title, label, vmin, vmax, units_label='',color='viridis'):
     values=np.squeeze(ds[label].values)
-    print('frame shape')
-    print(values.shape)
     fig, ax = plt.subplots()
     im = ax.imshow(values, cmap=color, extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()], vmin=vmin, vmax=vmax)

@@ -104,13 +104,19 @@ def div_calc(u, v, dx, dy):
 
 
 
-def contourf_plotter(cross,  label, geo, vmin, vmax, xlabel, color='viridis'):
+def contourf_plotter(cross,  label, geo, vmin, vmax, xlabel,geodesic, units_label='', color='viridis'):
     fig, ax = plt.subplots()
     im=ax.contourf(cross[xlabel], cross['plev'], cross[label],
                          levels=np.linspace(vmin, vmax, 10), cmap=color)
-    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
+    cbar_ax = fig.add_axes([0.1, -0.05, 0.78, 0.05])
+    fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
+    ax_inset=inset_plot(geodesic, fig)
+
     ax.set_title(label)
     ax.set_ylim(ax.get_ylim()[::-1])
+    ax.set_xlabel(geodesic[2])
+    ax.set_ylabel('[hPa]')
+    fig.tight_layout()
     plt.savefig('../data/processed/plots/'+label+'_'+geo+'.png',
                 bbox_inches='tight', dpi=300)
     plt.show()
@@ -125,39 +131,41 @@ def contourf_ax(ax, cross,  label, vmin, vmax, xlabel, color='viridis'):
     ax.set_ylim(ax.get_ylim()[::-1])
     return ax, im
     
+
+def inset_plot(geodesic, fig):
+    ax_inset = fig.add_axes([0.085, 0.9, 0.25, 0.25], projection=ccrs.PlateCarree())
+    start=geodesic[0]
+    end=geodesic[1]
+    ax_inset.set_global()
+    ax_inset.plot([start[1],end[1]],[start[0],end[0]],transform=ccrs.Geodetic(), linewidth=3)
+    ax_inset.coastlines()
+    return ax_inset
     
     
-def multiple_contourf(cross,  label, geo, vmin, vmax, xlabel, geodesic, color='viridis'):
+def multiple_contourf(cross,  label, geo, vmin, vmax, xlabel, geodesic, color='viridis', units_label=''):
     fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
     axlist[0], im =contourf_ax(axlist[0],cross,  label, vmin,vmax,xlabel)
+    axlist[0].set_xlabel(geodesic[2])
+    axlist[0].set_ylabel('[hPa]')
     axlist[1], im =contourf_ax(axlist[1],cross, label+'_era5',  vmin,vmax,xlabel)
     cbar_ax = fig.add_axes([0.1, -0.05, 0.78, 0.05])
-    ax_inset = fig.add_axes([0.125, 0.665, 0.25, 0.25], projection=ccrs.PlateCarree())
-    start=geodesic[0]
-    end=geodesic[1]
-    
-    ax_inset.plot(start[1],end[1],start[0],end[0])
-    ax_inset.coastlines()
+    fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5,label=units_label) 
 
-    #fig.colorbar(im, cax=cbar_ax, orientation='horizontal', label='[m/s]',pad=0.2)
-    
-
-    fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.2)
+    ax_inset=inset_plot(geodesic, fig)
     fig.tight_layout()
-
-    #fig.subplots_adjust(hspace=0.7, wspace=0.16)
     plt.savefig('../data/processed/plots/'+label + '_'+geo +
                 '.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
     
     
-def multiple_quiver(ds, title,xlabel):
+def multiple_quiver(ds, title,xlabel, geodesic ):
     fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u', 'v',xlabel)
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u_era5','v_era5',xlabel)
+    ax_inset=inset_plot(geodesic, fig)
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
@@ -186,14 +194,14 @@ def latlon_uniques(ds):
     
 def map_loop(ds):
     for pressure in PRESSURES:
-        plotter.map_plotter(ds.sel(plev=pressure, method='nearest'),
-                            'humidity_overlap_map_'+str(pressure), 'humidity_overlap', units_label='')
-        plotter.map_plotter_vmax(ds.sel(plev=pressure, method='nearest'),
-                            'shear_'+str(pressure), 'shear',0,1, units_label='')
-        plotter.map_plotter_vmax(ds.sel(plev=pressure, method='nearest'),
-                            'shear_era5_'+str(pressure), 'shear_era5',0,1, units_label='')
-        quiver.quiver_plot(ds.sel(plev=pressure,method='nearest'), 'quivermap_'+str(pressure), 'u', 'v')
-        quiver.quiver_plot(ds.sel(plev=pressure,method='nearest'), 'quivermap_era5_'+str(pressure), 'u_era5', 'v_era5')
+        plotter.map_plotter_cartopy(ds.sel(plev=pressure, method='nearest'),
+                            'humidity_overlap_map_'+str(pressure), 'humidity_overlap', 0,0.015, units_label='[g/g]')
+        plotter.map_plotter_cartopy(ds.sel(plev=pressure, method='nearest'),
+                            'shear_'+str(pressure), 'shear',0,1, units_label='[m/(s hPa)]')
+        plotter.map_plotter_cartopy(ds.sel(plev=pressure, method='nearest'),
+                            'shear_era5_'+str(pressure), 'shear_era5',0,1, units_label='[m/(s hPa)]')
+        quiver.quiver_plot_cartopy(ds.sel(plev=pressure,method='nearest'), 'quivermap_'+str(pressure), 'u', 'v')
+        quiver.quiver_plot_cartopy(ds.sel(plev=pressure,method='nearest'), 'quivermap_era5_'+str(pressure), 'u_era5', 'v_era5')
 
    
 
@@ -208,10 +216,10 @@ def cross_sequence(ds):
         xlabel=geodesic[2]
         cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
         cross=cross.reindex(plev=list(reversed(cross.plev)))
-        contourf_plotter(cross,  'humidity_overlap', geokey,  0,0.01,xlabel)
-        contourf_plotter(cross,  'error_mag', geokey,  0,5,xlabel)
-        multiple_contourf(cross,  'shear', geokey,  0,1,xlabel, geodesic)
-        multiple_quiver(cross, 'quiver_'+ geokey,xlabel)
+        contourf_plotter(cross,  'humidity_overlap', geokey,  0,0.01,xlabel, geodesic, units_label='[g/g]')
+        contourf_plotter(cross,  'error_mag', geokey,  0,5,xlabel, geodesic, units_label='[m/s]')
+        multiple_contourf(cross,  'shear', geokey,  0,1,xlabel, geodesic, units_label='[m/(s hPa)]')
+        multiple_quiver(cross, 'quiver_'+ geokey,xlabel, geodesic)
         
 
     
