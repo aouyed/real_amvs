@@ -23,7 +23,7 @@ THRESHOLD=10
 
 
 def thresh_loop():
-     for thresh in (10,0):
+     for thresh in [5]:
         ds=xr.open_dataset('../data/processed/07_01_2020.nc')  
         date=datetime(2020,7,1)
         ds=ds.loc[{'day':date,'time':'am','satellite':'snpp'}].squeeze()
@@ -33,8 +33,8 @@ def thresh_loop():
         thresh=str(thresh)
        
 def line_plotter(label):
-    df1=pd.read_csv('../data/interim/dataframes/t0.csv')
-    df2=pd.read_csv('../data/interim/dataframes/t10.csv')
+    df1=pd.read_csv('../data/interim/dataframes/t5_850.csv')
+    df2=pd.read_csv('../data/interim/dataframes/t10_850.csv')
     df1=sc.sorting_latlon(df1)
     df2=sc.sorting_latlon(df2)
 
@@ -55,10 +55,10 @@ def line_plotter(label):
     
     
 def main():
-    thresh_loop()
-    #line_plotter('rmse')
-    #line_plotter('shear')
-    #line_plotter('shear_era5')
+    #thresh_loop()
+    line_plotter('rmse')
+    line_plotter('shear')
+    line_plotter('shear_era5')
 
    
 if __name__ == '__main__':

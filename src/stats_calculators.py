@@ -123,18 +123,21 @@ def calc_week(thresh):
                 ds_unit=ds.sel(latitude=slice(edge[1],edge[0]))
                 ds_unit=ds_unit.loc[{'satellite':'snpp'}]
                 ds_unit=cs.preprocess(ds_unit, thresh)
-                sums['shear']= sums['shear']+ weighted_sum(ds_unit['shear_two_levels'])
-                sums['shear_era5']= sums['shear_era5']+ weighted_sum(ds_unit['shear_two_levels_era5'])
-                sums['shear_d']= sums['shear_d']+ weights_sum(ds['shear_two_levels_era5'])
+                shear=cs.shear_two_levels(ds_unit)
+                shear_era5=cs.shear_two_levels(ds_unit,'_era5')
+
+                sums['shear']= sums['shear']+ weighted_sum(shear)
+                sums['shear_era5']= sums['shear_era5']+ weighted_sum(shear_era5)
+                sums['shear_d']= sums['shear_d']+ weights_sum(shear_era5)
                 ds_unit=ds_unit.sel(plev=pressure, method='nearest')
               
                 sums['error']= sums['error']+ weighted_sum(ds_unit['error_mag'])
-                sums['denominator']= sums['denominator']+ weights_sum(ds_unit['error'])
+                sums['denominator']= sums['denominator']+ weights_sum(ds_unit['error_mag'])
            
             rmse_dict['edges'].append(str(edge[0])+','+str(edge[1]))
             rmse_dict['rmse'].append(np.sqrt(sums['error']/sums['denominator']))
-            rmse_dict['shear'].append(sums['shear']/sums['d_shear'])
-            rmse_dict['shear_era5'].append(sums['shear_era5']/sums['d_shear'])
+            rmse_dict['shear'].append(sums['shear']/sums['shear_d'])
+            rmse_dict['shear_era5'].append(sums['shear_era5']/sums['shear_d'])
         df=pd.DataFrame(data=rmse_dict)
         df.to_csv('../data/interim/dataframes/t'+str(thresh)+'_'+str(pressure) + '.csv')
         print(df)

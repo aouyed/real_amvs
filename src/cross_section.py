@@ -68,8 +68,8 @@ def preprocess(ds, thresh):
     ds['speed_diff']=ds['speed']-ds['speed_era5']
     ds['shear']=shear_calc(ds)
     ds['shear_era5']=shear_calc(ds,tag='_era5')
-    ds['shear_two_levels']=shear_two_levels(ds)
-    ds['shear_two_levels_era5']=shear_two_levels(ds,tag='_era5')
+    #ds['shear_two_levels']=shear_two_levels(ds)
+    #ds['shear_two_levels_era5']=shear_two_levels(ds,tag='_era5')
     #ds=cloud_filter(ds,date)
     if thresh>0:
         ds=ds.where(ds['error_mag']<thresh)
