@@ -46,6 +46,18 @@ def quiver_plot_cartopy(ds, title, u, v):
     plt.show()
     plt.close()  
     
+def quiver_ax_cartopy(ax,ds, title, u, v):
+    ds=ds.coarsen(latitude=5, longitude=5, boundary='trim').mean()
+    X, Y = np.meshgrid(ds['longitude'].values, ds['latitude'].values)
+   
+    Q = ax.quiver(X, Y, np.squeeze(
+        ds[u].values), np.squeeze(ds[v].values),scale=250)
+    qk=ax.quiverkey(Q, 0.5, 0.5, 5, r'5 m/s', labelpos='E',
+                      coordinates='figure')
+    ax.set_title(title)
+    ax.coastlines()
+    return ax
+    
     
 
 def main():

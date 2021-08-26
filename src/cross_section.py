@@ -25,6 +25,7 @@ import cartopy.crs as ccrs
 
 
 SCALE=1e4
+scale_g=1000
 PRESSURES=[850, 750, 650, 550]
 GEODESICS={'swath':[(-47.5, -60), (45, -30),'latitude'],
                 'equator':[(6.5, -149.5),(6.5, 4.5),'longitude']}
@@ -68,9 +69,6 @@ def preprocess(ds, thresh):
     ds['speed_diff']=ds['speed']-ds['speed_era5']
     ds['shear']=shear_calc(ds)
     ds['shear_era5']=shear_calc(ds,tag='_era5')
-    #ds['shear_two_levels']=shear_two_levels(ds)
-    #ds['shear_two_levels_era5']=shear_two_levels(ds,tag='_era5')
-    #ds=cloud_filter(ds,date)
     if thresh>0:
         ds=ds.where(ds['error_mag']<thresh)
     return ds
@@ -114,7 +112,7 @@ def div_calc(u, v, dx, dy):
 
 
 
-def contourf_plotter(cross,  label, geo, vmin, vmax, xlabel,geodesic, units_label='', color='viridis'):
+def contourf_plotter(cross,  label, geo, vmin, vmax, xlabel,geodesic,thresh,  units_label='', color='viridis'):
     fig, ax = plt.subplots()
     im=ax.contourf(cross[xlabel], cross['plev'], cross[label],
                          levels=np.linspace(vmin, vmax, 10), cmap=color)
@@ -127,7 +125,7 @@ def contourf_plotter(cross,  label, geo, vmin, vmax, xlabel,geodesic, units_labe
     ax.set_xlabel(geodesic[2])
     ax.set_ylabel('[hPa]')
     fig.tight_layout()
-    plt.savefig('../data/processed/plots/'+label+'_'+geo+'.png',
+    plt.savefig('../data/processed/plots/'+label+'_'+geo+'_'+str(thresh)+'.png',
                 bbox_inches='tight', dpi=300)
     plt.show()
 
@@ -174,9 +172,27 @@ def multiple_quiver(ds, title,xlabel, geodesic ):
     fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u', 'v',xlabel)
+    axlist[0].set_xlabel(geodesic[2])
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u_era5','v_era5',xlabel)
     ax_inset=inset_plot(geodesic, fig)
     fig.tight_layout()
+    plt.savefig('../data/processed/plots/'+title +
+                '.png', bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()
+    
+    
+def multiple_quiver_map(ds, title, tag=''):
+    fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={
+                             'projection': ccrs.PlateCarree()})
+    axlist = axes.flat
+    
+    for index, pressure in enumerate(PRESSURES):
+        print(axlist[index])
+        quiver.quiver_ax_cartopy( axlist[index],ds.sel(plev=pressure, method='nearest'), str(pressure)+' hPa', 'u'+tag, 'v'+tag)
+   
+    fig.tight_layout()
+    print('saving ' + title)
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
     plt.show()
@@ -215,10 +231,11 @@ def map_loop(ds):
 
    
 
-def cross_sequence(ds):
+def cross_sequence(ds, thresh):
     ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',earth_radius=6371229.0)
     data = ds.metpy.parse_cf().squeeze()
     latlon_uniques(data.copy())
+    tag='_t'+str(thresh)
     for geokey in GEODESICS:
         geodesic=GEODESICS[geokey]
         start=geodesic[0]
@@ -226,15 +243,16 @@ def cross_sequence(ds):
         xlabel=geodesic[2]
         cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
         cross=cross.reindex(plev=list(reversed(cross.plev)))
-        contourf_plotter(cross,  'humidity_overlap', geokey,  0,0.01,xlabel, geodesic, units_label='[g/g]')
-        contourf_plotter(cross,  'error_mag', geokey,  0,5,xlabel, geodesic, units_label='[m/s]')
-        multiple_contourf(cross,  'shear', geokey,  0,1,xlabel, geodesic, units_label='[m/(s hPa)]')
-        multiple_quiver(cross, 'quiver_'+ geokey,xlabel, geodesic)
+        contourf_plotter(cross,  'humidity_overlap', geokey,  0,10,xlabel, geodesic, thresh, units_label='[g/kg]')
+        contourf_plotter(cross,  'error_mag', geokey,  0,5,xlabel, geodesic,thresh,  units_label='[m/s]')
+        multiple_contourf(cross,  'shear', geokey+tag,  0,0.6,xlabel, geodesic, units_label='[m/(s hPa)]')
+        multiple_quiver(cross, 'quiver_'+ geokey+tag,xlabel, geodesic)
         
 
     
 
 def main():
+    thresh=10
     ds=xr.open_dataset('../data/processed/07_01_2020.nc')   
     date=datetime(2020,7,1)
     ds=ds.loc[{'day':date,'time':'am','satellite':'snpp'}].squeeze()
@@ -242,9 +260,14 @@ def main():
     ds['div_era5']=SCALE* ds['div_era5']
     ds['vort_era5_smooth']=SCALE*ds['vort_era5_smooth']
     ds['div_era5_smooth']=SCALE*ds['div_era5_smooth']
-    ds=preprocess(ds,10,date)
-    map_loop(ds)
-    cross_sequence(ds)
+    ds['humidity_overlap']=scale_g*ds['humidity_overlap']
+    ds=preprocess(ds,thresh)
+    
+    #map_loop(ds)
+    multiple_quiver_map(ds, 'quiver_'+str(thresh))
+    multiple_quiver_map(ds, 'quiver_'+str(thresh)+'_era5','_era5')
+
+    cross_sequence(ds, thresh)
    
     
 if __name__=="__main__":
