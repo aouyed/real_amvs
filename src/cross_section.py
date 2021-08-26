@@ -39,6 +39,13 @@ def shear_calc(ds, tag=''):
     return shear
 
 
+def shear_two_levels(ds, tag=''):
+    u_diff=ds['u'+tag].sel(plev=850, method='nearest')-ds['u'+tag].sel(plev=500, method='nearest')
+    v_diff=ds['v'+tag].sel(plev=850, method='nearest')-ds['v'+tag].sel(plev=500, method='nearest')
+    shear=np.sqrt(u_diff**2+v_diff**2)
+    return shear
+
+
 def cloud_filter(ds,date):
     
     ds_qc=xr.open_dataset('../data/processed/real_water_vapor_qc.nc')
@@ -51,7 +58,7 @@ def cloud_filter(ds,date):
     ds=ds.where(condition1 & condition2)
     return ds
 
-def preprocess(ds, thresh,date):
+def preprocess(ds, thresh):
     ds=ds.drop(['day','satellite','time','flowx','flowy','obs_time'])
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
@@ -61,8 +68,11 @@ def preprocess(ds, thresh,date):
     ds['speed_diff']=ds['speed']-ds['speed_era5']
     ds['shear']=shear_calc(ds)
     ds['shear_era5']=shear_calc(ds,tag='_era5')
-    ds=cloud_filter(ds,date)
-    #ds=ds.where(ds['error_mag']<thresh)
+    ds['shear_two_levels']=shear_two_levels(ds)
+    ds['shear_two_levels_era5']=shear_two_levels(ds,tag='_era5')
+    #ds=cloud_filter(ds,date)
+    if thresh>0:
+        ds=ds.where(ds['error_mag']<thresh)
     return ds
 
 

@@ -14,6 +14,9 @@ import quiver as q
 from datetime import datetime 
 import qv_grad as qg
 import stats
+import glob
+import cross_section as cs
+from natsort import natsorted
 
 def line_plotter(df0, values, title):
     fig, ax = plt.subplots()
@@ -52,34 +55,92 @@ def weighted_mean(da):
     da_weighted=da.weighted(weights)
     w_mean=da_weighted.mean(('longitude','latitude'), skipna=True)
     return w_mean.item()
+
+def weighted_sum(da):
+    '''Calculates regional cosine weighted means from dataset'''
+    
+    weights = np.cos(np.deg2rad(da.latitude))
+    weights.name='weights'
+    da_weighted=da.weighted(weights)
+    w_sum=da_weighted.sum(('longitude','latitude'), skipna=True)
+    condition=xr.ufuncs.logical_not(xr.ufuncs.isnan(da))
+    weights=weights.where(condition)
+    return w_sum.item()
+
+def weights_sum(da):
+    '''Calculates regional cosine weighted means from dataset'''
+    
+    weights = np.cos(np.deg2rad(da.latitude))
+    weights.name='weights'
+    condition=xr.ufuncs.logical_not(xr.ufuncs.isnan(da))
+    weights=weights.where(condition)
+    return weights.sum().item()
+    
     
 
 def sorting_latlon(df0):
-    df0.edges[df0.edges == '90°S,60°S'] = '(0) 90°S,60°S'
-    df0.edges[df0.edges == '60°S,30°S'] = '(1) 60°S,30°S'
-    df0.edges[df0.edges == '30°S,30°N'] = '(2) 30°S,30°N'
-    df0.edges[df0.edges == '30°N,60°N'] = '(3) 30°N,60°N'
-    df0.edges[df0.edges == '60°N,90°N'] = '(4) 60°N,90°N'
+    df0.edges[df0.edges == '-70,-30'] = '(1) 70°S,30°S'
+    df0.edges[df0.edges == '-30,30'] = '(2) 30°S,30°N'
+    df0.edges[df0.edges == '30,70'] = '(3) 30°N,70°N'
     df0.sort_values(by=['edges'], inplace=True)
     return df0
 
 
 
 def rmse_calc(ds, thresh):
-    rmse_dict={'edges':[],'rmse':[]}
+    ds=ds.sel(plev=850, method='nearest')
+    rmse_dict={'edges':[],'rmse':[],'shear':[],'shear_era5':[]}
     edges=[[-30,30],[30,60],[60,90],[-60,-30],[-90,-60]]
     
     for edge in edges:
         ds_unit=ds.sel(latitude=slice(edge[1],edge[0]))
-        rmse= np.sqrt(weighted_mean(ds_unit['mag_error']))
+        rmse= np.sqrt(weighted_mean(ds_unit['error_mag']))
+        shear=weighted_mean(ds_unit['shear_two_levels'])
+        shear_era5=weighted_mean(ds_unit['shear_two_levels_era5'])
         edge=coord_to_string(edge)
-        rmse_dict['edges'].append(edge)
+        rmse_dict['edges'].append(str(edge[0])+','+str(edge[1]))
         rmse_dict['rmse'].append(rmse)
+        rmse_dict['shear'].append(shear)
+        rmse_dict['shear_era5'].append(shear_era5)
     df=pd.DataFrame(data=rmse_dict)
     df.to_csv('../data/interim/dataframes/t'+str(thresh)+'.csv')
     print(df)
     return df
+
+def calc_week(thresh):
+    for pressure in cs.PRESSURES:
+        print(pressure)
+        rmse_dict={'edges':[],'rmse':[],'shear':[],'shear_era5':[]}
+        edges=[[-30,30],[30,70],[-70,-30]]
+        file_names=natsorted(glob.glob('../data/processed/07*20.nc'))
+    
+        for edge in edges:
+            print(edge)
+            sums={'error':0, 'shear':0, 'shear_era5':0,'denominator':0,'shear_d':0}
+            for file_name in file_names:
+                print(file_name)
+                ds=xr.open_dataset(file_name)
+                ds_unit=ds.sel(latitude=slice(edge[1],edge[0]))
+                ds_unit=ds_unit.loc[{'satellite':'snpp'}]
+                ds_unit=cs.preprocess(ds_unit, thresh)
+                sums['shear']= sums['shear']+ weighted_sum(ds_unit['shear_two_levels'])
+                sums['shear_era5']= sums['shear_era5']+ weighted_sum(ds_unit['shear_two_levels_era5'])
+                sums['shear_d']= sums['shear_d']+ weights_sum(ds['shear_two_levels_era5'])
+                ds_unit=ds_unit.sel(plev=pressure, method='nearest')
+              
+                sums['error']= sums['error']+ weighted_sum(ds_unit['error_mag'])
+                sums['denominator']= sums['denominator']+ weights_sum(ds_unit['error'])
+           
+            rmse_dict['edges'].append(str(edge[0])+','+str(edge[1]))
+            rmse_dict['rmse'].append(np.sqrt(sums['error']/sums['denominator']))
+            rmse_dict['shear'].append(sums['shear']/sums['d_shear'])
+            rmse_dict['shear_era5'].append(sums['shear_era5']/sums['d_shear'])
+        df=pd.DataFrame(data=rmse_dict)
+        df.to_csv('../data/interim/dataframes/t'+str(thresh)+'_'+str(pressure) + '.csv')
+        print(df)
+    return df
         
+
 def hist2d(ds, title, label, xedges, yedges):
     print('2dhistogramming..')
 
@@ -137,6 +198,7 @@ def coord_to_string(coord):
         lowlat = str(coord[1]) + '°N'
     stringd = str(str(lowlat)+',' + str(uplat))
     return stringd
+
 
     
 
