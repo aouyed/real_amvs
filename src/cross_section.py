@@ -26,18 +26,21 @@ import cartopy.crs as ccrs
 
 SCALE=1e4
 scale_g=1000
-PRESSURES=[850, 750, 650, 550]
+PRESSURES=[850, 700, 500, 400]
 GEODESICS={'swath':[(-47.5, -60), (45, -30),'latitude'],
                 'equator':[(6.5, -149.5),(6.5, 4.5),'longitude']}
 
 
 
 def shear_calc(ds, tag=''):
-    u_diff=ds['u'+tag].diff('plev')
-    v_diff=ds['v'+tag].diff('plev')
-    p_diff=ds['plev'].diff('plev')
-    shear=np.sqrt(u_diff**2+v_diff**2)/p_diff
-    return shear
+    u=ds['u'+tag].rolling(plev=3, latitude=3, longitude=3).mean()
+    v=ds['v'+tag].rolling(plev=3, latitude=3, longitude=3).mean()
+    u_diff=u.differentiate('plev')
+    v_diff=v.differentiate('plev')
+    p_diff=ds['plev'].differentiate('plev')
+    ds['u_shear'+tag]=u_diff/p_diff
+    ds['v_shear'+tag]=v_diff/p_diff
+    return ds
 
 
 def shear_two_levels(ds, tag=''):
@@ -67,8 +70,8 @@ def preprocess(ds, thresh):
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
-    ds['shear']=shear_calc(ds)
-    ds['shear_era5']=shear_calc(ds,tag='_era5')
+    ds=shear_calc(ds)
+    ds=shear_calc(ds,tag='_era5')
     if thresh>0:
         ds=ds.where(ds['error_mag']<thresh)
     return ds
@@ -91,16 +94,17 @@ def quiver_plot(ds, title, u, v,xlabel):
     plt.show()
     plt.close()
     
-def quiver_ax(ax,ds, title, u, v,xlabel):
+def quiver_ax(ax,ds, title, u, v,xlabel, qkey=5, units='m/s'):
     ds = ds.coarsen(index=2, boundary='trim').mean().coarsen(
                 plev=2, boundary='trim').mean()
     X, Y = np.meshgrid(ds[xlabel].values, ds['plev'].values)
     ax.set_title(title)
     Q=ax.quiver(X, Y, np.squeeze(
         ds[u].values), np.squeeze(ds[v].values))
-    ax.quiverkey(Q, 0.8, 0.9, 5, r'5 m/s', labelpos='E',
+    ax.quiverkey(Q, 0.8, 0.9, qkey, str(qkey)+' m/s', labelpos='E',
                       coordinates='figure')
     ax.set_ylim(ax.get_ylim()[::-1])
+    #ax.set_ylim(1000,500)
     return ax
 
 
@@ -168,12 +172,12 @@ def multiple_contourf(cross,  label, geo, vmin, vmax, xlabel, geodesic, color='v
     plt.close()
     
     
-def multiple_quiver(ds, title,xlabel, geodesic ):
+def multiple_quiver(ds, title, geodesic, xlabel, tag='',qkey=5, units='m/s'):
     fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
-    axlist[0]=quiver_ax(axlist[0],ds, title, 'u', 'v',xlabel)
+    axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
-    axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u_era5','v_era5',xlabel)
+    axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
     ax_inset=inset_plot(geodesic, fig)
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
@@ -245,8 +249,10 @@ def cross_sequence(ds, thresh):
         cross=cross.reindex(plev=list(reversed(cross.plev)))
         contourf_plotter(cross,  'humidity_overlap', geokey,  0,10,xlabel, geodesic, thresh, units_label='[g/kg]')
         contourf_plotter(cross,  'error_mag', geokey,  0,5,xlabel, geodesic,thresh,  units_label='[m/s]')
-        multiple_contourf(cross,  'shear', geokey+tag,  0,0.6,xlabel, geodesic, units_label='[m/(s hPa)]')
-        multiple_quiver(cross, 'quiver_'+ geokey+tag,xlabel, geodesic)
+        #multiple_contourf(cross,  'shear', geokey+tag,  0,0.6,xlabel, geodesic, units_label='[m/(s hPa)]')
+        multiple_quiver(cross, 'quiver_'+ geokey+tag, geodesic, xlabel, qkey=5)
+        multiple_quiver(cross, 'quiver_shear'+ geokey+tag, geodesic,xlabel,  tag='_shear', qkey=0.1,units='m/(s hPa)')
+
         
 
     
