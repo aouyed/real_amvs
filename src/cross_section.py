@@ -67,6 +67,8 @@ def preprocess(ds, thresh):
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
     ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
+    ds['squared_error']=ds['u_error']**2+ds['v_error']**2
+
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
