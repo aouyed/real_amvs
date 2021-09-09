@@ -15,6 +15,9 @@ from datetime import datetime
 import stats_calculators as sc
 import cross_section as cs
 import qv_grad as qg
+import stats_pressurer as sp
+from matplotlib.pyplot import cm
+
 BINS=30
 THRESHOLD=10    
 
@@ -23,7 +26,7 @@ THRESHOLD=10
 
 
 def thresh_loop():
-     for thresh in [5]:
+     for thresh in sp.THRESHOLDS:
         ds=xr.open_dataset('../data/processed/07_01_2020.nc')  
         date=datetime(2020,7,1)
         ds=ds.loc[{'day':date,'time':'am','satellite':'snpp'}].squeeze()
@@ -49,25 +52,15 @@ def rmse_plotter(label):
     plt.close()
 
 def line_plotter(label):
-    df1=pd.read_csv('../data/interim/dataframes/t0_850.csv')
-    df2=pd.read_csv('../data/interim/dataframes/t5_850.csv')
-    df3=pd.read_csv('../data/interim/dataframes/t10_850.csv')
-
-    df1=sc.sorting_latlon(df1)
-    df2=sc.sorting_latlon(df2)
-    df3=sc.sorting_latlon(df3)
-
     fig, ax = plt.subplots()
-
- 
-    ax.plot(df1['edges'], df1[label], '-o', label='no quality control')
-    ax.plot(df2['edges'], df2[label], '-o', label='thresh= 5 m/s')
-    ax.plot(df3['edges'], df3[label], '-o', label='thresh= 10 m/s')
-    ax.plot(df1['edges'], df1[label+'_era5'], '-o', linestyle='dashed', label='era5, no quality control')
-    ax.plot(df2['edges'], df2[label+'_era5'], '-o', linestyle='dashed', label='era5, thresh= 5 m/s')
-    ax.plot(df3['edges'], df3[label+'_era5'], '-o', linestyle='dashed', label='era5, thresh= 10 m/s')
-
-
+    colors = cm.tab10(np.linspace(0, 1, len(sp.THRESHOLDS)))
+    for i, thresh in enumerate(sp.THRESHOLDS):
+        df=pd.read_csv('../data/interim/dataframes/t'+str(thresh)+'_850.csv')
+        df=sc.sorting_latlon(df)
+        ax.plot(df['edges'], df[label], '-o', label='δ = '+str(thresh)+' m/s', color=colors[i])
+        ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='era5, δ = '+str(thresh)+' m/s', color=colors[i])
+    
+    
     ax.legend(frameon=None)
     #ax.set_ylim(0, 10)
     ax.set_xlabel("Region")
@@ -78,8 +71,8 @@ def line_plotter(label):
     
     
 def main():
-    #thresh_loop()
-    rmse_plotter('rmse')
+    thresh_loop()
+    #rmse_plotter('rmse')
     line_plotter('shear')
 
    

@@ -9,10 +9,6 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 import pandas as pd
-import first_stage_amv as fsa
-import quiver as q
-from datetime import datetime 
-import qv_grad as qg
 import stats
 import glob
 import cross_section as cs
@@ -112,7 +108,7 @@ def calc_week(thresh):
         print(pressure)
         rmse_dict={'edges':[],'rmse':[],'shear':[],'shear_era5':[]}
         edges=[[-30,30],[30,70],[-70,-30]]
-        file_names=natsorted(glob.glob('../data/processed/07*20.nc'))
+        file_names=natsorted(glob.glob('../data/processed/07*20*.nc'))
     
         for edge in edges:
             print(edge)

@@ -9,10 +9,6 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 import pandas as pd
-import first_stage_amv as fsa
-import quiver as q
-from datetime import datetime 
-import qv_grad as qg
 import stats_calculators as sc
 import glob
 import cross_section as cs
@@ -24,7 +20,7 @@ THRESHOLDS=(5,10,100)
 
 
 def calc_days(thresh):
-    file_names=natsorted(glob.glob('../data/processed/07*20.nc'))
+    file_names=natsorted(glob.glob('../data/processed/07*20*.nc'))
     for file_name in file_names: 
         d={'pressure':[],'error_sum':[],'speed_sum':[],
            'denominator':[],'yield':[]}
@@ -91,20 +87,29 @@ def  plot_yield(ax, df, color, thresh):
      ax.set_ylabel('Counts')
 
     
-def line_plotter(func, plot_name):
-    fig, ax = plt.subplots()
+def line_plotter(func, ax):
     colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
     for i, thresh in enumerate(THRESHOLDS):
         color=colors[i]
         df=pd.read_csv('../data/processed/dataframes/rmsvd_t'+str(thresh)+'.csv')
         func(ax, df, color, thresh)
-    ax.legend()
+    ax.legend(frameon=False)
  
     ax.set_xlabel("Pressure [hPa]")
-    plt.savefig('../data/processed/plots/'+plot_name+'.png', bbox_inches='tight', dpi=300)
-
+    return ax
+    
+    
+def multiple_lineplots(title, plot_rmsvd,plot_yield):
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+    axlist = axes.flat
+    axlist[0]=line_plotter(plot_rmsvd, axlist[0])
+    axlist[1]=line_plotter(plot_yield, axlist[1])
+    fig.tight_layout()
+    plt.savefig('../data/processed/plots/'+title +
+                '.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
+    
     
 def threshold_fun():
     for thresh in THRESHOLDS:
@@ -112,10 +117,8 @@ def threshold_fun():
         calc_pressure(thresh)
     
 def main():
-    #threshold_fun()
-    line_plotter(plot_rmsvd,'rmsvd')
-    line_plotter(plot_yield,'yield')
-
+    threshold_fun()
+    multiple_lineplots('pressure_plots', plot_rmsvd,plot_yield)
     
 
 
