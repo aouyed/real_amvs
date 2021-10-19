@@ -27,7 +27,7 @@ THRESHOLD=10
 
 def thresh_loop():
      for thresh in sp.THRESHOLDS:
-        ds=xr.open_dataset('../data/processed/07_01_2020.nc')  
+        ds=xr.open_dataset('../data/processed/07_01_2020_am.nc')  
         date=datetime(2020,7,1)
         ds=ds.loc[{'day':date,'time':'am','satellite':'snpp'}].squeeze()
         #df=sc.rmse_calc(ds, thresh)
@@ -65,13 +65,13 @@ def line_plotter(label):
     #ax.set_ylim(0, 10)
     ax.set_xlabel("Region")
     ax.set_ylabel('Shear [m/s]')
-    plt.show()
     plt.savefig('../data/processed/plots/line_plots.png', bbox_inches='tight', dpi=300)
+    plt.show()
     plt.close()
     
     
 def main():
-    thresh_loop()
+   # thresh_loop()
     #rmse_plotter('rmse')
     line_plotter('shear')
 

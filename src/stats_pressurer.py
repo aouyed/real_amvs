@@ -16,7 +16,7 @@ from natsort import natsorted
 from matplotlib.pyplot import cm
 
 
-THRESHOLDS=(5,10,100)
+THRESHOLDS=[5,10,100]
 
 
 def calc_days(thresh):
@@ -77,25 +77,31 @@ def calc_pressure(thresh):
     df.to_csv('../data/processed/dataframes/rmsvd_t'+str(thresh)+'.csv')
     
         
-def  plot_rmsvd(ax, df, color, thresh):
-     ax.plot(df['pressure'], df['rmsvd'],  label='RMSVD, δ = '+str(thresh)+' m/s', color=color)
-     ax.plot(df['pressure'], df['speed'], label='speed, δ = '+str(thresh)+' m/s',linestyle='dashed', color=color)
+def  plot_rmsvd(ax, df, width, thresh):
+     ax.plot(df['pressure'], df['rmsvd'],  label='RMSVD, δ = '+str(thresh)+' m/s', linewidth=width, color='black')
+     ax.plot(df['pressure'], df['speed'], label='speed, δ = '+str(thresh)+' m/s',linestyle='dashed', linewidth=width,color='black')
      ax.set_ylabel('[m/s]')
 
-def  plot_yield(ax, df, color, thresh):
-     ax.plot(df['pressure'], df['yield'],  label='δ = '+str(thresh)+' m/s', color=color)
-     ax.set_ylabel('Counts')
+def  plot_yield(ax, df, width, thresh):
+     ax.plot(df['pressure'], df['yield']/7,  label='δ = '+str(thresh)+' m/s', linewidth=width,color='black')
+     ax.set_ylabel('Counts per day')
 
     
 def line_plotter(func, ax):
     colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
-    for i, thresh in enumerate(THRESHOLDS):
-        color=colors[i]
+    widths=np.linspace(1,3, len(THRESHOLDS))
+    for i, thresh in enumerate(reversed(THRESHOLDS)):
+        #color=colors[i]
+        width=widths[i]
         df=pd.read_csv('../data/processed/dataframes/rmsvd_t'+str(thresh)+'.csv')
-        func(ax, df, color, thresh)
+        func(ax, df, width, thresh)
     ax.legend(frameon=False)
- 
     ax.set_xlabel("Pressure [hPa]")
+    ax.set_xscale('symlog')
+    ax.set_xticklabels(np.arange(1000, 50, -300))
+    ax.set_xlim(df['pressure'].max(), df['pressure'].min())
+    ax.set_xticks(np.arange(1000, 50, -300))
+
     return ax
     
     
@@ -117,7 +123,7 @@ def threshold_fun():
         calc_pressure(thresh)
     
 def main():
-    threshold_fun()
+    #threshold_fun()
     multiple_lineplots('pressure_plots', plot_rmsvd,plot_yield)
     
 

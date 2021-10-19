@@ -6,17 +6,10 @@ Created on Wed Mar 24 15:17:31 2021
 @author: aouyed
 """
 import os 
-import cv2
 import xarray as xr
 import numpy as np
-import metpy.calc as mpcalc
-from metpy.units import units
-import inpainter 
 import amv_calculators as calc
-import quiver
-import plotter
 import time
-from dask.diagnostics import ProgressBar
 import pandas as pd
 import era5_downloader as ed
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -91,7 +84,6 @@ def ds_unit_calc(ds, day,pressure, time):
 
 
 def serial_loop(ds):
-    ds_total=xr.Dataset()
     for day in ds['day'].values:
         print(day)
         ed.downloader(day)

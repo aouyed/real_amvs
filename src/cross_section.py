@@ -15,6 +15,8 @@ from metpy.units import units
 import plotter 
 import quiver 
 import cartopy.crs as ccrs
+from datetime import datetime 
+import stats_pressurer as sp
 
 
 
@@ -68,100 +70,34 @@ def preprocess(ds, thresh):
     ds['speed_diff']=ds['speed']-ds['speed_era5']
     ds=shear_calc(ds)
     ds=shear_calc(ds,tag='_era5')
+    condition=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds['humidity_overlap']))
+    ds=ds.where(condition)
     if thresh>0:
         ds=ds.where(ds['error_mag']<thresh)
     return ds
 
-
-def quiver_plot(ds, title, u, v,xlabel):
-    ds = ds.coarsen(index=2, boundary='trim').mean().coarsen(
-                plev=2, boundary='trim').mean()
-    fig, ax = plt.subplots()
-    X, Y = np.meshgrid(ds[xlabel].values, ds['plev'].values)
-    ax.set_title(title)
-    Q = ax.quiver(X, Y, np.squeeze(
-        ds[u].values), np.squeeze(ds[v].values))
-    ax.quiverkey(Q, 0.8, 0.9, 5, r'5 m/s', labelpos='E',
-                      coordinates='figure')
-    ax.set_ylim(ax.get_ylim()[::-1])
-    fig.tight_layout()
-    plt.savefig('../data/processed/plots/quiver_'+title+'.png',
-                bbox_inches='tight', dpi=300)
-    plt.show()
-    plt.close()
     
 def quiver_ax(ax,ds, title, u, v,xlabel, qkey=5, units='m/s'):
-    ds = ds.coarsen(index=2, boundary='trim').mean().coarsen(
-                plev=2, boundary='trim').mean()
+    ds = ds.coarsen(index=2, plev=2, boundary='trim').mean()
+    #ds = ds.rolling(index=2, plev=2).mean()
+
     X, Y = np.meshgrid(ds[xlabel].values, ds['plev'].values)
-    ax.set_title(title)
     Q=ax.quiver(X, Y, np.squeeze(
-        ds[u].values), np.squeeze(ds[v].values))
-    ax.quiverkey(Q, 0.8, 0.9, qkey, str(qkey)+' m/s', labelpos='E',
+        ds[u].values), np.squeeze(ds[v].values),scale=500)
+    ax.quiverkey(Q, 0.8, 0.5, qkey, str(qkey)+' m/s', labelpos='E',
                       coordinates='figure')
-    ax.set_ylim(ax.get_ylim()[::-1])
-    #ax.set_ylim(1000,500)
+    #ax.set_ylim(ax.get_ylim()[::-1])
+    
+    ax.set_yscale('symlog')
+    ax.set_yticklabels(np.arange(1000, 50, -200))
+    ax.set_ylim(ds['plev'].max(), ds['plev'].min())
+    ax.set_yticks(np.arange(1000, 50, -200))
+
+    #ax.set_ylim(850,400)
     return ax
 
 
-def div_calc(u, v, dx, dy):
-    div = mpcalc.divergence(u * units['m/s'], v * units['m/s'], 
-                            dx=dx, dy=dy)
-    div = SCALE*div.magnitude
-    return u, v, div
 
-
-
-def contourf_plotter(cross,  label, geo, vmin, vmax, xlabel,geodesic,thresh,  units_label='', color='viridis'):
-    fig, ax = plt.subplots()
-    im=ax.contourf(cross[xlabel], cross['plev'], cross[label],
-                         levels=np.linspace(vmin, vmax, 10), cmap=color)
-    cbar_ax = fig.add_axes([0.1, -0.05, 0.78, 0.05])
-    fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
-    ax_inset=inset_plot(geodesic, fig)
-
-    ax.set_title(label)
-    ax.set_ylim(ax.get_ylim()[::-1])
-    ax.set_xlabel(geodesic[2])
-    ax.set_ylabel('[hPa]')
-    fig.tight_layout()
-    plt.savefig('../data/processed/plots/'+label+'_'+geo+'_'+str(thresh)+'.png',
-                bbox_inches='tight', dpi=300)
-    plt.show()
-
-    plt.close()
-    
-    
-def contourf_ax(ax, cross,  label, vmin, vmax, xlabel, color='viridis'):
-    im=ax.contourf(cross[xlabel], cross['plev'], cross[label],
-                         levels=np.linspace(vmin, vmax, 10), cmap=color)
-    ax.set_title(label)
-    ax.set_ylim(ax.get_ylim()[::-1])
-    return ax, im
-
-def contourf_quiver( cross,  label, geo, vmin, vmax, xlabel,geodesic,thresh,  units_label='', color='viridis'):
-    fig, axes = plt.subplots(nrows=2, ncols=1)
-    axlist = axes.flat
-    axlist[0], im=contourf_ax(axlist[0], cross,  label, 
-                          vmin, vmax, xlabel, color='viridis')
-    cbar_ax = fig.add_axes([0.1, -0.05, 0.78, 0.05])
-    fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
-    axlist[1]=quiver_ax(axlist[1],cross, 'wind', 
-                        'u', 'v', xlabel, qkey=5, units='m/s')
-    ax_inset=inset_plot(geodesic, fig)
-
-    #ax.set_title(label)
-    #ax.set_ylim(ax.get_ylim()[::-1])
-    axlist[0].set_xlabel(geodesic[2])
-    axlist[0].set_ylabel('[hPa]')
-    fig.tight_layout()
-    plt.savefig('../data/processed/plots/'+label+'_'+geo+'_'+str(thresh)+'.png',
-                bbox_inches='tight', dpi=300)
-    plt.show()
-
-    plt.close()
-    
-    
     
 
 def inset_plot(geodesic, fig):
@@ -175,13 +111,14 @@ def inset_plot(geodesic, fig):
     
     
     
-def multiple_quiver(ds, title, geodesic, xlabel, tag='',qkey=5, units='m/s'):
+def multiple_quiver(ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m/s'):
     fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
     ax_inset=inset_plot(geodesic, fig)
+    axlist[0].text(0.8,1.1,'δ = ' + thresh + ' m/s', transform=axlist[0].transAxes)
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
@@ -189,7 +126,7 @@ def multiple_quiver(ds, title, geodesic, xlabel, tag='',qkey=5, units='m/s'):
     plt.close()
     
     
-def multiple_quiver_map(ds, title, tag=''):
+def multiple_quiver_map(ds, title,letter,thresh,  tag=''):
     fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={
                              'projection': ccrs.PlateCarree()})
     axlist = axes.flat
@@ -198,12 +135,36 @@ def multiple_quiver_map(ds, title, tag=''):
         print(axlist[index])
         quiver.quiver_ax_cartopy( axlist[index],ds.sel(plev=pressure, method='nearest'), str(pressure)+' hPa', 'u'+tag, 'v'+tag)
    
+    axlist[0].text(-180, 100, letter)
+    axlist[1].text(80, 100, 'δ = ' + thresh + ' m/s')
     fig.tight_layout()
     print('saving ' + title)
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
+    
+def eight_panel_quiver_map(ds, title, thresh):
+    fig, axes = plt.subplots(nrows=4, ncols=2, subplot_kw={
+                             'projection': ccrs.PlateCarree()})
+    axlist = axes.flat
+    
+    for j, tag in enumerate(('','_era5')):
+        for index, pressure in enumerate(PRESSURES):
+            if tag == '':
+                title_tag=str(pressure)+' hPa'
+            else: 
+                title_tag='ERA 5'
+            quiver.quiver_ax_cartopy( axes[index,j],ds.sel(plev=pressure, method='nearest'), title_tag, 'u'+tag, 'v'+tag)
+   
+    plt.tight_layout()
+    plt.subplots_adjust(wspace=-0.7)
+    print('saving ' + title)
+    plt.savefig('../data/processed/plots/'+title +
+                '.png', bbox_inches='tight', dpi=500)
+    plt.show()
+    plt.close()
+    
 
 def latlon_uniques(ds):
     lat,lon=np.meshgrid(ds['latitude'].values, ds['longitude'].values)
@@ -224,19 +185,7 @@ def latlon_uniques(ds):
     print('humidity_overlap')
     print(uniques)
     
-    
-def map_loop(ds):
-    for pressure in PRESSURES:
-        plotter.map_plotter_cartopy(ds.sel(plev=pressure, method='nearest'),
-                            'humidity_overlap_map_pm'+str(pressure), 'humidity_overlap', 0,0.015, units_label='[g/g]')
-        plotter.map_plotter_cartopy(ds.sel(plev=pressure, method='nearest'),
-                            'shear_pm'+str(pressure), 'shear',0,1, units_label='[m/(s hPa)]')
-        plotter.map_plotter_cartopy(ds.sel(plev=pressure, method='nearest'),
-                            'shear_era5_pm'+str(pressure), 'shear_era5',0,1, units_label='[m/(s hPa)]')
-        quiver.quiver_plot_cartopy(ds.sel(plev=pressure,method='nearest'), 'quivermap_pm'+str(pressure), 'u', 'v')
-        quiver.quiver_plot_cartopy(ds.sel(plev=pressure,method='nearest'), 'quivermap_era5_pm'+str(pressure), 'u_era5', 'v_era5')
 
-   
 
 def cross_sequence(ds, thresh, time):
     ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',earth_radius=6371229.0)
@@ -248,36 +197,31 @@ def cross_sequence(ds, thresh, time):
         start=geodesic[0]
         end=geodesic[1]
         xlabel=geodesic[2]
-        cross = cross_section(data, start, end).set_coords(('latitude', 'longitude'))
+        cross = cross_section(data, start, end, interp_type='nearest').set_coords(('latitude', 'longitude'))
         cross=cross.reindex(plev=list(reversed(cross.plev)))
-        contourf_quiver(cross,  'humidity_overlap', geokey+'_'+time,  0,10,xlabel, geodesic, thresh, units_label='[g/kg]')
-        #contourf_plotter(cross,  'error_mag', geokey+'_'+time,  0,5,xlabel, geodesic,thresh,  units_label='[m/s]')
-        #multiple_contourf(cross,  'shear', geokey+tag,  0,0.6,xlabel, geodesic, units_label='[m/(s hPa)]')
-        multiple_quiver(cross, 'quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, qkey=5)
-        multiple_quiver(cross, 'quiver_shear'+ time + '_'+ geokey+tag, geodesic,xlabel,  tag='_shear', qkey=0.1,units='m/(s hPa)')
-
-        
+        multiple_quiver(cross, 'quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
+       
 
     
 
 def main():
     time='am'
-    thresh=10
-    ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')   
-    date=datetime(2020,7,1)
-    ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
-    ds['vort_era5']=SCALE* ds['vort_era5']
-    ds['div_era5']=SCALE* ds['div_era5']
-    ds['vort_era5_smooth']=SCALE*ds['vort_era5_smooth']
-    ds['div_era5_smooth']=SCALE*ds['div_era5_smooth']
-    ds['humidity_overlap']=scale_g*ds['humidity_overlap']
-    ds=preprocess(ds,thresh)
     
-    #map_loop(ds)
-    multiple_quiver_map(ds, 'quiver_pm'+str(thresh))
-    multiple_quiver_map(ds, 'quiver_pm'+str(thresh)+'_era5','_era5')
+    for thresh in sp.THRESHOLDS:
+        ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')   
+        date=datetime(2020,7,1)
+        ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
+        ds['vort_era5']=SCALE* ds['vort_era5']
+        ds['div_era5']=SCALE* ds['div_era5']
+        ds['vort_era5_smooth']=SCALE*ds['vort_era5_smooth']
+        ds['div_era5_smooth']=SCALE*ds['div_era5_smooth']
+        ds['humidity_overlap']=scale_g*ds['humidity_overlap']
+        ds=preprocess(ds,thresh)
+        cross_sequence(ds, thresh, time)
+        eight_panel_quiver_map(ds, 'quiver_pm'+str(thresh),str( thresh))    
+    
 
-    cross_sequence(ds, thresh, time)
+
    
     
 if __name__=="__main__":

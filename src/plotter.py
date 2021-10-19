@@ -65,25 +65,28 @@ def map_plotter_vmax(ds, title, label, vmin, vmax, units_label='',color='viridis
     plt.show()
     plt.close()    
     
+   
+def overlap(ds):
+    ds_snpp=ds.loc[{'satellite':'snpp'}]
+    ds_j1=ds.loc[{'satellite':'j1'}]
+    condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
+    condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
+    ds_snpp=ds_snpp[['specific_humidity_mean','obs_time']].where(condition1 & condition2)
+    ds_j1=ds_j1[['specific_humidity_mean','obs_time']].where(condition1 & condition2)
+    return ds_snpp, ds_j1
+
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc') 
-    #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_test2.nc')
-    print(ds)
-    #print(ds)
     ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'am','satellite':'snpp'}]
     ds_map=ds_map.sel(plev=706, method='nearest')
-    mind=ds_map['obs_time'].min(skipna=True).values
-    print(mind)
-    timedelta=mind+np.timedelta64(5, 'm')
-    ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
     map_plotter(ds_map, 'snpp', 'specific_humidity_mean')
     
-    ds_map=ds.loc[{'day':datetime(2020,7,3),'plev':706.6,'time':'pm','satellite':'snpp'}]
-    mind=ds_map['obs_time'].min(skipna=True).values
-    print(mind)
-    timedelta=mind+np.timedelta64(10, 'm')
-    ds_map=ds_map.where((ds_map.obs_time>mind) & (ds_map.obs_time<timedelta))
-    map_plotter(ds_map, 'j1', 'specific_humidity_mean')
+    ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'am'}]
+    ds_map=ds_map.sel(plev=706, method='nearest')
+    ds_snpp, ds_j1=overlap(ds_map)
+    map_plotter(ds_snpp, 'snpp', 'specific_humidity_mean')
+
+    
     
 if __name__=="__main__":
     main()
