@@ -1,0 +1,10 @@
+
+ SNPARM = PRES;TMPK;DWPK;RELH;UWND;VWND;HGHT                                    
+
+ STID = ESQV          STNM =     2591    TIME = 200102/0000         
+ SLAT =  57.65     SLON =    18.35   SELV =    47.0
+ STIM =     0
+
+      PRES     TMPK     DWPK     RELH     UWND     VWND     HGHT
+     70.00   201.65   183.65     5.37    22.87   -19.19 17880.00
+     52.80 -9999.00 -9999.00 -9999.00    31.73   -14.80 -9999.00

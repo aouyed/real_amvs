@@ -1,0 +1,9 @@
+
+ SNPARM = PRES;TMPK;DWPK;RELH;UWND;VWND;HGHT                                    
+
+ STID = OUN           STNM =    72357    TIME = 200103/0600         
+ SLAT =  35.21     SLON =   -97.45   SELV =   357.0
+ STIM =   700
+
+      PRES     TMPK     DWPK     RELH     UWND     VWND     HGHT
+    971.00   278.75   276.45    85.13     2.58    -4.46   357.00

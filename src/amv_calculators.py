@@ -101,7 +101,7 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     model_t=start+np.timedelta64(25, 'm')
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
-    ds_j1=ds_j1.where((ds_j1.obs_time > start) & +(ds_j1.obs_time<end))
+    ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
     
     
     

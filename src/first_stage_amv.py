@@ -12,6 +12,7 @@ import amv_calculators as calc
 import time
 import pandas as pd
 import era5_downloader as ed
+from datetime import datetime 
 pd.options.mode.chained_assignment = None  # default='warn'
 
 ALG='farneback'
@@ -84,7 +85,8 @@ def ds_unit_calc(ds, day,pressure, time):
 
 
 def serial_loop(ds):
-    for day in ds['day'].values:
+    #for day in ds['day'].values:
+    for day in [datetime(2020,7,1)]:
         print(day)
         ed.downloader(day)
         
@@ -93,7 +95,7 @@ def serial_loop(ds):
             ds_unit1=xr.Dataset()
             print('pressure:')
             print(pressure.item())
-            for time in ['pm']:  
+            for time in ['am']:  
                 print('time')
                 print(time)
                 ds_unit0=ds_unit_calc(ds, day,pressure, time)
