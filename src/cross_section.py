@@ -64,7 +64,6 @@ def preprocess(ds, thresh):
     ds['v_error']=ds['v']-ds['v_era5']
     ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
     ds['squared_error']=ds['u_error']**2+ds['v_error']**2
-
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
@@ -208,17 +207,17 @@ def main():
     time='am'
     
     for thresh in sp.THRESHOLDS:
-        ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')   
-        date=datetime(2020,7,1)
+        ds=xr.open_dataset('../data/processed/07_02_2020_'+time+'.nc')
+        
+        date=datetime(2020,7,2)
         ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
-        ds['vort_era5']=SCALE* ds['vort_era5']
-        ds['div_era5']=SCALE* ds['div_era5']
-        ds['vort_era5_smooth']=SCALE*ds['vort_era5_smooth']
-        ds['div_era5_smooth']=SCALE*ds['div_era5_smooth']
         ds['humidity_overlap']=scale_g*ds['humidity_overlap']
         ds=preprocess(ds,thresh)
+        data=ds['u'].values
+        print(np.count_nonzero(~np.isnan(data)))
+
         cross_sequence(ds, thresh, time)
-        eight_panel_quiver_map(ds, 'quiver_pm'+str(thresh),str( thresh))    
+        eight_panel_quiver_map(ds, 'quiver_am'+str(thresh),str( thresh))    
     
 
 

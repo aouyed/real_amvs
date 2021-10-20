@@ -114,10 +114,6 @@ def serial_loop(ds):
         model_closer(day,ds_unit,time)
 
 
-def dask_func(ds):
-    return xr.apply_ufunc(
-        serial_loop, ds,
-        dask='parallelized',output_dtypes=[float])
         
 def main():
     #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc', chunks={"plev": 20})
