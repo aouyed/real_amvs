@@ -40,17 +40,9 @@ def calc(frame0, frame):
     nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
-    if fsa.ALG == 'tvl1':
-        print('tvl1')
-        print('tvl1')
-        print('tvl1')
-        print('tvl1')
-        print('tvl1')
-        print('tvl1')
-        optical_flow=cv2.optflow.createOptFlow_DualTVL1()
-        flowd = optical_flow.calc(nframe0, nframe, None)
-    else:
-        flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
+
+
+    flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
      
@@ -89,11 +81,11 @@ def swath_initializer(ds, dmins, swath_hours):
     
 
 def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
-    ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & +(ds_snpp.obs_time<end))
+    ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
     model_t=start+np.timedelta64(25, 'm')
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
-    ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+    ds_j1=ds_j1.where((ds_j1.obs_time > start) & +(ds_j1.obs_time<end))
     
     
     

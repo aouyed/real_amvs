@@ -207,9 +207,9 @@ def main():
     time='am'
     
     for thresh in sp.THRESHOLDS:
-        ds=xr.open_dataset('../data/processed/07_02_2020_'+time+'.nc')
+        ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')
         
-        date=datetime(2020,7,2)
+        date=datetime(2020,7,1)
         ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
         ds['humidity_overlap']=scale_g*ds['humidity_overlap']
         ds=preprocess(ds,thresh)
