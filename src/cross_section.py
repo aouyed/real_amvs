@@ -59,7 +59,8 @@ def cloud_filter(ds,date):
     return ds
 
 def preprocess(ds, thresh):
-    ds=ds.drop(['day','satellite','time','flowx','flowy','obs_time'])
+    print('preprocessing...')
+    ds=ds.drop(['day','satellite','time','flowx','flowy'])
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
     ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
@@ -67,12 +68,11 @@ def preprocess(ds, thresh):
     ds['speed']=np.sqrt(ds['u']**2+ds['v']**2)
     ds['speed_era5']=np.sqrt(ds['u_era5']**2+ds['v_era5']**2)
     ds['speed_diff']=ds['speed']-ds['speed_era5']
-    ds=shear_calc(ds)
-    ds=shear_calc(ds,tag='_era5')
     condition=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds['humidity_overlap']))
     ds=ds.where(condition)
     if thresh>0:
         ds=ds.where(ds['error_mag']<thresh)
+    print('end of preprocessing')
     return ds
 
     

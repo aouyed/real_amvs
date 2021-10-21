@@ -10,43 +10,67 @@ import glob
 from datetime import datetime 
 import pandas as pd
 import xarray as xr
+import cross_section as cs
+from datetime import timedelta
+import numpy as np
+def preprocess(ds):
+    print('preprocessing...')
+    ds=ds.drop(['day','satellite','time','flowx','flowy'])
+    ds['u_error']=ds['u']-ds['u_era5']
+    ds['v_error']=ds['v']-ds['v_era5']
+    ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
+    print('end of preprocessing')
+    return ds
 
 def main():
-    files=glob.glob('../data/raw/radiosondes/20200702*.dat')
-    print(files)
+    for daynum in (1,2,3,4,5,6,7):
+        df_total=pd.DataFrame()
+
+        files=glob.glob('../data/raw/radiosondes/2020070'+str(daynum)+'*.dat')
+        print(files)
+        
+        time='am'
+        ds=xr.open_dataset('../data/processed/07_0'+str(daynum)+'_2020_'+time+'.nc') 
+        for file in files:
+            print(file)
+            df=pd.read_csv(file, skiprows=6,delimiter='\s+')
+            stem=file[24:]
+            date=datetime.strptime(stem[:10],"%Y%m%d%H")
+            df['TIME']=date
+            with open (file) as myfile:
+                top=myfile.readlines()[0:5]
+            lat=float(top[4][7:15])
+            lon=float(top[4][25:34])
+            sample=ds.sel(latitude=lat, longitude=lon, day=date,plev=df['PRES'].values,  method='nearest')
+            sample=sample.sel(satellite='snpp')
+            sample=preprocess(sample)
     
-    time='am'
-    ds=xr.open_dataset('../data/processed/07_02_2020_'+time+'.nc')  
-    df_total=pd.DataFrame()
-    for file in files:
-        print(file)
-        df=pd.read_csv(file, skiprows=6,delimiter='\s+')
-        stem=file[24:]
-        date=datetime.strptime(stem[:10],"%Y%m%d%H")
-        df['TIME']=date
-        with open (file) as myfile:
-            top=myfile.readlines()[0:5]
-        lat=float(top[4][7:15])
-        lon=float(top[4][25:34])
-        sample=ds.sel(latitude=lat, longitude=lon, day=date,plev=df['PRES'].values,  method='nearest')
-        sample=sample.sel(satellite='snpp')
-        df=df.reset_index()
-        df_s=sample.to_dataframe().reset_index()
-        if not df_s['u'].isnull().all():
-            df['LAT']=lat
-            df['LON']=lon
-            df['lat']=sample['latitude'].values.item()
-            df['lon']=sample['longitude'].values.item()
-            df['time']=df_s['obs_time']
-            df['plev']=df_s['plev']
-            df['u']=df_s['u']
-            df['v']=df_s['v']
-            print(df)
-            if df_total.empty:
-                df_total=df
-            else:
-                df_total=df_total.append(df)
-    print(df_total[['TIME','time']])
+            df=df.reset_index()
+            df_s=sample.to_dataframe().reset_index()
+            if not df_s['u'].isnull().all():
+                df['LAT']=lat
+                df['LON']=lon
+                df['lat']=sample['latitude'].values.item()
+                df['lon']=sample['longitude'].values.item()
+                df['time']=df_s['obs_time']
+                df['deltat']=abs(df['TIME']-df['time'])
+                df['plev']=df_s['plev']
+                df['u']=df_s['u']
+                df['v']=df_s['v']
+                df['error_era5']=df_s['error_mag']
+                df=df.dropna()
+                if df_total.empty:
+                    df_total=df
+                else:
+                    df_total=df_total.append(df)
+        print(df_total[['TIME','time','deltat']])
+    delta = timedelta(hours=3)
+    df_total['u_error']=df_total.UWND - df_total.u
+    df_total['v_error']=df_total.VWND - df_total.v
+    df_total['error_mag']=np.sqrt(df_total.v_error**2+df_total.u_error**2)
+    print(df_total)
+    breakpoint()
+ 
         
         
         

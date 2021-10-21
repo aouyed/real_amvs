@@ -35,7 +35,7 @@ def model_closer(date,ds,time):
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    os.remove('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+    #os.remove('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
     ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'_'+time+'.nc')
    
 
@@ -85,13 +85,16 @@ def ds_unit_calc(ds, day,pressure, time):
 
 
 def serial_loop(ds):
-    for day in ds['day'].values:
+    #for day in ds['day'].values:
+    for day in [datetime(2020,7,1)]:
         print(day)
         ed.downloader(day)
         
+        ds_unit=xr.Dataset()
         for pressure in ds['plev'].values:
             ds_unit1=xr.Dataset()
             print('pressure:')
+            print(pressure)
             for time in ['am']:  
                 print('time')
                 print(time)
