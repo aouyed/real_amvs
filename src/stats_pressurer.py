@@ -16,7 +16,7 @@ from natsort import natsorted
 from matplotlib.pyplot import cm
 
 
-THRESHOLDS=[0, 5,10,100]
+THRESHOLDS=[4,10,100]
 
 
 def calc_days(thresh):
@@ -78,13 +78,25 @@ def calc_pressure(thresh):
     
         
 def  plot_rmsvd(ax, df, width, thresh):
-     ax.plot(df['pressure'], df['rmsvd'],  label='RMSVD, δ = '+str(thresh)+' m/s', linewidth=width, color='black')
-     ax.plot(df['pressure'], df['speed'], label='speed, δ = '+str(thresh)+' m/s',linestyle='dashed', linewidth=width,color='black')
-     ax.set_ylabel('[m/s]')
+     ax.plot(df['rmsvd'],df['pressure'], label='δ = '+str(thresh)+' m/s', linewidth=width)
+     #ax.plot(df['pressure'], df['speed'], label='speed, δ = '+str(thresh)+' m/s',linestyle='dashed', linewidth=width,color='black')
+     ax.set_xlabel('RMSVD between AMVs and ERA5 [m/s]')
+     ax.set_yscale('symlog')
+     ax.set_yticklabels(np.arange(1000, 50, -150))
+     ax.set_ylim(df['pressure'].max(), df['pressure'].min())
+     ax.set_yticks(np.arange(1000, 50, -150))
+     ax.set_xticklabels(np.arange(0, 35, 5))
+     ax.set_xticks(np.arange(0, 35, 5))
+
 
 def  plot_yield(ax, df, width, thresh):
-     ax.plot(df['pressure'], df['yield']/7,  label='δ = '+str(thresh)+' m/s', linewidth=width,color='black')
-     ax.set_ylabel('Counts per day')
+     ax.plot( df['yield']/7,df['pressure'],  label='δ = '+str(thresh)+' m/s', linewidth=width)
+     ax.set_xlabel('Counts per day')
+     ax.set_yscale('symlog')
+     ax.set_yticklabels(np.arange(1000, 50, -150))
+     ax.set_ylim(df['pressure'].max(), df['pressure'].min())
+     ax.set_yticks(np.arange(1000, 50, -150))
+
 
     
 def line_plotter(func, ax):
@@ -96,11 +108,8 @@ def line_plotter(func, ax):
         df=pd.read_csv('../data/processed/dataframes/rmsvd_t'+str(thresh)+'.csv')
         func(ax, df, width, thresh)
     ax.legend(frameon=False)
-    ax.set_xlabel("Pressure [hPa]")
-    ax.set_xscale('symlog')
-    ax.set_xticklabels(np.arange(1000, 50, -300))
-    ax.set_xlim(df['pressure'].max(), df['pressure'].min())
-    ax.set_xticks(np.arange(1000, 50, -300))
+    ax.set_ylabel("Pressure [hPa]")
+
 
     return ax
     

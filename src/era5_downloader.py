@@ -7,6 +7,9 @@ Created on Fri Aug 13 16:15:10 2021
 """
 import cdsapi
 import pandas as pd 
+import radiosonde_collocator as rc
+from datetime import datetime 
+import xarray as xr
 
 def downloader(date):
   
@@ -55,3 +58,32 @@ def downloader(date):
             ],
         },
         '../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+    
+
+def loader():
+    date_list=rc.daterange(datetime(2020,7,1), datetime(2020,7,7), 24)
+    for date in date_list:
+        downloader(date)
+     
+    
+
+
+def main():
+    date_list=rc.daterange(datetime(2020,7,1), datetime(2020,7,7), 24)
+    for date in date_list:
+        print(date)
+        year = date.strftime('%Y')
+        month = date.strftime('%m')
+        day  = date.strftime('%d') 
+        ds=xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+        ds=ds[['u','v']].coarsen(latitude=4, longitude=4, boundary='trim').mean()
+        print(ds)
+        ds.to_netcdf('../data/interim/coarse_model_'+month+'_'+day+'_'+year+'.nc')
+         
+
+     
+        
+        
+        
+if __name__=='__main__':
+    main()

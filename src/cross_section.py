@@ -91,7 +91,6 @@ def quiver_ax(ax,ds, title, u, v,xlabel, qkey=5, units='m/s'):
     ax.set_yticklabels(np.arange(1000, 50, -200))
     ax.set_ylim(ds['plev'].max(), ds['plev'].min())
     ax.set_yticks(np.arange(1000, 50, -200))
-
     #ax.set_ylim(850,400)
     return ax
 
@@ -115,6 +114,7 @@ def multiple_quiver(ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
+    axlist[0].set_ylabel('Pressure [hPa]')
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
     ax_inset=inset_plot(geodesic, fig)
     axlist[0].text(0.8,1.1,'δ = ' + thresh + ' m/s', transform=axlist[0].transAxes)
@@ -187,6 +187,7 @@ def latlon_uniques(ds):
 
 
 def cross_sequence(ds, thresh, time):
+    ds=ds.drop('obs_time')
     ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',earth_radius=6371229.0)
     data = ds.metpy.parse_cf().squeeze()
     latlon_uniques(data.copy())

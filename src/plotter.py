@@ -15,19 +15,21 @@ import cv2
 from dateutil.parser import parse
 import first_stage_amv as fsa 
 import cartopy.crs as ccrs
+import stats_calculators as sc
 
 
 
 
-def map_plotter_cartopy(ds, title, label,vmin, vmax,  units_label=''):
+def map_plotter_cartopy(ds, title, label, units_label=''):
     values=np.squeeze(ds[label].values)
-    fig, ax = plt.subplots()
+    fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines()
-    ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
     im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
-        ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()], vmin=vmin, vmax=vmax)
-    plt.title(label)
+        ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
+    ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
+
+    #plt.title(label)
     cbar_ax = fig.add_axes([0.1, 0.05, 0.78, 0.05])
     fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
     plt.savefig('../data/processed/plots/'+title+'.png',
@@ -75,6 +77,20 @@ def overlap(ds):
     ds_j1=ds_j1[['specific_humidity_mean','obs_time']].where(condition1 & condition2)
     return ds_snpp, ds_j1
 
+def corr(ds, thresh):
+    ds['speed']=np.sqrt(ds.u**2+ds.v**2)
+    ds['speed_era5']=np.sqrt(ds.u_era5**2+ds.v_era5**2)
+    ds['u_error']=ds['u']-ds['u_era5']
+    ds['v_error']=ds['v']-ds['v_era5']
+    ds['error_mag']=np.sqrt(ds['u_error']**2+ds['v_error']**2)
+    ds['error_square']=ds['u_error']**2+ds['v_error']**2
+    ds=ds.where(ds.error_mag<thresh)
+    print(np.sqrt(sc.weighted_mean(ds['error_square'])))
+
+    df=ds.to_dataframe()
+    df=df.reset_index().dropna()
+    print(df[['u','u_era5']].corr())
+
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc') 
     ds_map=ds.loc[{'day':datetime(2020,7,1),'time':'am','satellite':'snpp'}]
@@ -90,7 +106,11 @@ def main():
     ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')
     ds_map=ds.loc[{'time':time,'satellite':'j1'}]
     ds_map=ds_map.sel(plev=706, method='nearest')
-    map_plotter(ds_map, 'snpp', 'humidity_overlap')
+    corr(ds_map, 10)
+    
+    map_plotter_cartopy(ds_map, 'snpp', 'humidity_overlap','[g/kg]')
+    
+
     print(ds_map)
     
     
