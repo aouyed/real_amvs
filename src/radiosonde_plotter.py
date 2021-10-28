@@ -60,6 +60,7 @@ def pressure_plot(df,rmsvd_label, title):
     ax.set_ylim(df['plev'].max(), df['plev'].min())
     ax.set_yticks(np.arange(900, 50, -100))
     ax.set_title(title)
+    plt.savefig('../data/processed/plots/radiosonde_comparison.png', dpi=300)
     plt.show()
     plt.close()
            
@@ -83,22 +84,10 @@ def main():
 
     df=df[df.deltat<delta]    
     print(df.shape)
-    breakpoint()
     
 
     pressure_plot(df, 'rmsvd','Difference between 3D AMVs and radiosondes')
-    #pressure_plot(df, 'rmsvd_era5', 'Difference between ERA5 and radiosondes')
-
-    scatter(df['error_mag'],df['error_era5'])
-    scatter(df['speed'],df['speed_rao'])
-    scatter(df['speed_era5'],df['speed_rao'])
-    scatter(df['u'],df['UWND'])
-    scatter(df['u_era5'],df['UWND'])
-
-
-    #scatter(df['UWND'],df['u'])
-    #scatter(df['plev'],df['error_mag'])
-   
+    
     
     
     

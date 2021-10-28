@@ -92,23 +92,14 @@ def corr(ds, thresh):
     print(df[['u','u_era5']].corr())
 
 def main():
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc') 
-    ds_map=ds.loc[{'day':datetime(2020,7,1),'time':'am','satellite':'snpp'}]
-    ds_map=ds_map.sel(plev=706, method='nearest')
-    map_plotter(ds_map, 'snpp', 'specific_humidity_mean')
-    
-    #ds_map=ds.loc[{'day':datetime(2020,7,3),'time':'am'}]
-    #ds_map=ds_map.sel(plev=706, method='nearest')
-    #ds_snpp, ds_j1=overlap(ds_map)
-    #map_plotter(ds_snpp, 'snpp', 'specific_humidity_mean')
-    
+  
     time='am'
     ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')
     ds_map=ds.loc[{'time':time,'satellite':'j1'}]
     ds_map=ds_map.sel(plev=706, method='nearest')
     corr(ds_map, 10)
     
-    map_plotter_cartopy(ds_map, 'snpp', 'humidity_overlap','[g/kg]')
+    map_plotter_cartopy(ds_map, 'humidity_overlap_map_j1', 'humidity_overlap','[g/kg]')
     
 
     print(ds_map)

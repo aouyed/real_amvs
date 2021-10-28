@@ -186,15 +186,15 @@ def scatter2d(ds, title, label, xedges, yedges):
     
     
 def coord_to_string(coord):
-    if coord[0] < 0:
-        uplat = str(abs(coord[0])) + '°S'
-    else:
-        uplat = str(coord[0]) + '°N'
-
     if coord[1] < 0:
-        lowlat = str(abs(coord[1])) + '°S'
+        uplat = str(abs(coord[1])) + '°S'
     else:
-        lowlat = str(coord[1]) + '°N'
+        uplat = str(coord[1]) + '°N'
+
+    if coord[0] < 0:
+        lowlat = str(abs(coord[0])) + '°S'
+    else:
+        lowlat = str(coord[0]) + '°N'
     stringd = str(str(lowlat)+',' + str(uplat))
     return stringd
 

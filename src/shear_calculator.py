@@ -67,7 +67,9 @@ def calc_shear(thresh):
             sums['shear_denominator']= sums['shear_denominator']+ sc.weights_sum(shear_era5)
           
            
-        shear_dict['edges'].append(str(edge[0])+','+str(edge[1]))
+        edge=sc.coord_to_string(edge)
+        print(edge)
+        shear_dict['edges'].append(edge)
         shear_dict['shear'].append(sums['shear']/sums['shear_denominator'])
         shear_dict['shear_era5'].append(sums['shear_era5']/sums['shear_denominator'])
     df=pd.DataFrame(data=shear_dict)
@@ -96,7 +98,7 @@ def line_plotter(label):
     
     
 def main():
-    thresh_loop()
+    #thresh_loop()
     line_plotter('shear')
 
    

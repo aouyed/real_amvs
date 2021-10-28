@@ -115,7 +115,10 @@ def multiple_quiver(ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
     axlist[0].set_ylabel('Pressure [hPa]')
+    axlist[0].text(5,400,'3D AMVs')
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
+    axlist[1].text(5,400,'ERA 5')
+
     ax_inset=inset_plot(geodesic, fig)
     axlist[0].text(0.8,1.1,'δ = ' + thresh + ' m/s', transform=axlist[0].transAxes)
     fig.tight_layout()
@@ -158,6 +161,26 @@ def eight_panel_quiver_map(ds, title, thresh):
    
     plt.tight_layout()
     plt.subplots_adjust(wspace=-0.7)
+    print('saving ' + title)
+    plt.savefig('../data/processed/plots/'+title +
+                '.png', bbox_inches='tight', dpi=500)
+    plt.show()
+    plt.close()
+    
+def four_panel_quiver_map(ds, title, thresh, pressures):
+    fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={
+                             'projection': ccrs.PlateCarree()})
+    axlist = axes.flat
+    
+    for j, tag in enumerate(('','_era5')):
+        for index, pressure in enumerate(pressures):
+            if tag == '':
+                title_tag=str(pressure)+' hPa'
+            else: 
+                title_tag='ERA 5'
+            quiver.quiver_ax_cartopy( axes[index,j],ds.sel(plev=pressure, method='nearest'), title_tag, 'u'+tag, 'v'+tag)
+   
+    plt.tight_layout()
     print('saving ' + title)
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=500)
@@ -218,8 +241,8 @@ def main():
         print(np.count_nonzero(~np.isnan(data)))
 
         cross_sequence(ds, thresh, time)
-        eight_panel_quiver_map(ds, 'quiver_am'+str(thresh),str( thresh))    
-    
+        four_panel_quiver_map(ds, 'quiver_am_p1'+str(thresh),str( thresh),[850,700])    
+        four_panel_quiver_map(ds, 'quiver_am_p2'+str(thresh),str( thresh),[500,400])    
 
 
    
