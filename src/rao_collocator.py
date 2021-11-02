@@ -13,6 +13,7 @@ import xarray as xr
 import cross_section as cs
 from datetime import timedelta
 import numpy as np
+import igra
 
 
 def daterange(start_date, end_date, dhour):
@@ -76,6 +77,7 @@ def collocator(file, ds, ds_model, df_total):
     df = pd.read_csv(file, skiprows=6, delimiter='\s+')
     df = collocated_pressure_list(df, ds['plev'].values)
     stem = file[24:]
+    breakpoint()
     date = datetime.strptime(stem[:10], "%Y%m%d%H")
     df['TIME'] = date
     with open(file) as myfile:
@@ -104,27 +106,9 @@ def collocator(file, ds, ds_model, df_total):
 
 
 def main():
-    days = daterange(datetime(2020, 7, 1), datetime(2020, 7, 7), 24)
-    for day in days:
-        print(day)
-        df_total = pd.DataFrame()
-        filedate = day.strftime('%Y%m%d')
-        dsdate = day.strftime('%m_%d_%Y')
-        files = glob.glob('../data/raw/radiosondes/' + filedate+'*.dat')
-        for time in ('am', 'pm'):
-            ds = xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
-            ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
-            ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
-            ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
-
-            for file in files:
-                df_total = collocator(file, ds,ds_model,  df_total)
-    df_total['u_error'] = df_total.UWND - df_total.u
-    df_total['v_error'] = df_total.VWND - df_total.v
-    df_total['error_mag'] = np.sqrt(df_total.v_error**2+df_total.u_error**2)
-    df_total.to_pickle(
-        '../data/processed/dataframes/collocated_radiosondes_july.pkl')
-
+    import igra
+    stations = igra.download.stationlist('/tmp')
+    print(stations)
 
 if __name__ == '__main__':
     main()
