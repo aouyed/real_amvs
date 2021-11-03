@@ -3,7 +3,6 @@ import glob
 from datetime import datetime
 import pandas as pd
 import xarray as xr
-import cross_section as cs
 from datetime import timedelta
 import numpy as np
 import igra
@@ -83,6 +82,9 @@ def collocated_igra_ids(df):
      print("--- %s seconds ---" % (time.time() - start_time))    
      print(output_df)
      return output_df
+ 
+    
+
             
 
 def collocated_winds(df):
@@ -106,19 +108,14 @@ def collocated_winds(df):
         print("--- %s seconds ---" % (time.time() - start_time))    
 
 
-        breakpoint()
-        
-
-
-
-         
 
 
 def igra_downloader(df,days):
-    df_total=pd.DataFrame()
     station_list=np.unique(df['stationid'].values)
-    for station in station_list:
+    for station in station_list[49:]:
         print(station)
+        df_total=pd.DataFrame()
+
         for day in days:
 
             print(day)
@@ -135,11 +132,13 @@ def igra_downloader(df,days):
                         df_total=df_unit
                     else:
                         df_total=df_total.append(df_unit)
-                except ValueError:
-                    print('exception')
+                except Exception as e:
+                    print("type error: " + str(e))
+    
                 print("--- %s seconds ---" % (time.time() - start_time))    
-
-    return df_total
+        print(df_total)
+        if not df_total.empty:
+            df_total.to_pickle('../data/interim/rs_dataframes/' + station +'.pkl')
 
 
             
@@ -159,8 +158,7 @@ def main():
     #df.to_pickle('../data/interim/dataframes/igra_id.pkl')
     df=pd.read_pickle('../data/interim/dataframes/igra_id.pkl')
     print(df)
-    df_rao=igra_downloader(df,days)
-    df_rao=pd.read_pickle('../data/interim/dataframes/igra_rao.pkl')
+    igra_downloader(df,days)
 
 
 
