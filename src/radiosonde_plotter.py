@@ -45,7 +45,8 @@ def pressure_plot(df,rmsvd_label, title):
     fig, ax=plt.subplots() 
     df_pressure_era= pressure_df(df)
     for thresh in THRESHOLDS:
-        df_unit=df[df.error_era5<thresh]
+        df_unit=df[df.error_mag<thresh]
+        print(df_unit.shape)
         df_pressure= pressure_df(df_unit)
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
     ax.plot(df_pressure_era['rmsvd_era5'], df_pressure_era.plev, label='ERA 5')
@@ -66,23 +67,21 @@ def pressure_plot(df,rmsvd_label, title):
            
        
 def preprocess(df):
-    df=df[df.UWND>-1000]
-    df['speed']=np.sqrt(df.u**2+df.v**2)
-    df['speed_era5']=np.sqrt(df.u_coarse_era5**2+df.v_coarse_era5**2)
-    df['speed_rao']=np.sqrt(df.UWND**2+df.VWND**2)
-
-    print(df.columns)
-    df['error_square']=df.error_mag**2
-    df['error_square_era5']=(df.UWND-df.u_coarse_era5)**2+(df.VWND-df.v_coarse_era5)**2
+    df=df[df.u_wind>-1000]
+    udiff=df.u_wind-df.u
+    vdiff=df.v_wind-df.v
+    df['error_mag']=np.sqrt((df.u-df.u_era5)**2+(df.v-df.v_era5)**2)
+    df['error_square']=udiff**2+vdiff**2
+    df['error_square_era5']=(df.u_wind-df.u_era5)**2+(df.v_wind-df.v_era5)**2
     return df
 
 
 def main():
-    df=pd.read_pickle('../data/processed/dataframes/collocated_radiosondes_july.pkl')
+    df=pd.read_pickle('../data/processed/dataframes/winds_rs.pkl')
     df=preprocess(df)
-    delta=timedelta(hours=1.5)
+    #delta=timedelta(hours=1.5)
 
-    df=df[df.deltat<delta]    
+    #df=df[df.deltat<delta]    
     print(df.shape)
     
 

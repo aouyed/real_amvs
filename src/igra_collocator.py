@@ -7,6 +7,7 @@ from datetime import timedelta
 import numpy as np
 import igra
 import time
+from tqdm import tqdm
 from siphon.simplewebservice.igra2 import IGRAUpperAir
 HOURS=1.5 
 
@@ -34,21 +35,23 @@ def space_time_collocator(days, deltat):
         time='am'
         dsdate = day.strftime('%m_%d_%Y')
         ds = xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
-        df_unit=ds['obs_time'].to_dataframe()
+        ds-ds.sel(satellite='snpp')
+        df_unit=ds[['obs_time','u']].to_dataframe()
         df_unit=df_unit.reset_index()
-        df_unit=df_unit[['latitude','longitude','obs_time']]
+        df_unit=df_unit[['latitude','longitude','obs_time','u']]
         first_rao=datetime(day.year, day.month, day.day, 0)
         second_rao=datetime(day.year, day.month, day.day, 12)
         condition1=df_unit['obs_time'].between(first_rao-deltat,first_rao+deltat)
         condition2=df_unit['obs_time'].between(second_rao-deltat,second_rao+deltat)
         df_unit=df_unit.loc[condition1 | condition2]
         df_unit=df_unit.drop_duplicates(ignore_index=True)
+        df_unit=df_unit.dropna()
         
         if df.empty:
             df=df_unit
         else:
             df=df.append(df_unit)
-    return df 
+    return df[['latitude','longitude','obs_time']]
         
 def collocate_igra(stations, latlon):
     lat=latlon[0]
@@ -69,15 +72,18 @@ def collocated_igra_ids(df):
      lon=df['longitude'].values
      times=df['obs_time'].values
      latlons=list(zip(lat,lon, times))
-     station_dict={'lat':[],'lon':[],'stationid':[],'obs_time':[]}
-     for latlon in latlons:
+     station_dict={'lat':[],'lon':[],'lon_rs':[],'lat_rs':[],'stationid':[],'obs_time':[]}
+     for latlon in tqdm(latlons):
          df_unit=collocate_igra(stations, latlon)
          if not df_unit.empty:
              ids=df_unit.index.values.tolist()
              station_dict['lat'].append(latlon[0])
              station_dict['lon'].append(latlon[1])
+             station_dict['lat_rs'].append(df_unit['lat'].values[0])
+             station_dict['lon_rs'].append(df_unit['lon'].values[0])
              station_dict['stationid'].append(ids[0])
              station_dict['obs_time'].append(latlon[2])
+             
      output_df=pd.DataFrame(data=station_dict)
      print("--- %s seconds ---" % (time.time() - start_time))    
      print(output_df)
@@ -153,12 +159,12 @@ def igra_downloader(df,days):
 def main():
     deltat=timedelta(hours=HOURS)
     days = daterange(datetime(2020, 7, 1), datetime(2020, 7, 7), 24)
-    #df=space_time_collocator(days, deltat)
-    #df=collocated_igra_ids(df)
-    #df.to_pickle('../data/interim/dataframes/igra_id.pkl')
+    df=space_time_collocator(days, deltat)
+    df=collocated_igra_ids(df)
+    df.to_pickle('../data/interim/dataframes/igra_id.pkl')
     df=pd.read_pickle('../data/interim/dataframes/igra_id.pkl')
     print(df)
-    igra_downloader(df,days)
+    #igra_downloader(df,days)
 
 
 

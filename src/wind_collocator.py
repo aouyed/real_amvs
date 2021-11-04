@@ -8,6 +8,7 @@ import numpy as np
 import igra
 import time
 import os.path
+from tqdm import tqdm
 HOURS=1.5 
 PATH='../data/interim/rs_dataframes/'
 
@@ -29,12 +30,15 @@ def collocated_pressure_list(df, plevs):
             df_total = df_unit
         else:
             df_total = df_total.append(df_unit)
-    return df_total
+    
+    return df_total.reset_index(drop=True)
             
 
-def df_calculator(df, df_s, lat, lon):
+def df_calculator(df, df_s, lat, lon, lat_rs,lon_rs):
     df['lat'] = lat
     df['lon'] = lon
+    df['lat_rs'] = lat_rs
+    df['lon_rs'] = lon_rs
     df['date_amv'] = df_s['obs_time']
     df['deltat'] = abs(df['date']-df['date_amv'])
     df['plev'] = df_s['plev']
@@ -42,19 +46,22 @@ def df_calculator(df, df_s, lat, lon):
     df['v'] = df_s['v']
     df['u_era5'] = df_s['u_era5']
     df['v_era5'] = df_s['v_era5']
+    udiff=df.u-df.u_era5
+    vdiff=df.v-df.v_era5
+    df['error_mag']=np.sqrt(udiff**2+vdiff**2)
     
     return df
    
     
 def collocated_winds(df):
-    
-    for parameters in df.values:
-        lat,lon,station,obs_time=parameters
+    df_total=pd.DataFrame()
+    for parameters in tqdm(df.values):
+        lat,lon,lon_rs, lat_rs, station,obs_time=parameters
         fname=PATH+station+'.pkl'
         if os.path.isfile(fname):
             df_rs=pd.read_pickle(fname)
             df_rs=df_rs.reset_index()
-            if obs_time.hour> (24-HOURS):
+            if obs_time.hour >= (24-HOURS):
                 date=datetime(obs_time.year,obs_time.month, obs_time.day+1,0)
             elif obs_time.hour<= HOURS:
                 date=datetime(obs_time.year,obs_time.month, obs_time.day,0)
@@ -68,11 +75,16 @@ def collocated_winds(df):
                 ds=ds.sel(satellite='snpp')
                 ds=ds.squeeze()
                 df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
-                breakpoint()
                 ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
                 df_s=ds.to_dataframe().reset_index()
-
-                df_rs=df_calculator(df_rs, df_s, lat, lon)
+                df_rs=df_calculator(df_rs, df_s, lat, lon, lat_rs, lon_rs)
+                
+                if df_total.empty:
+                    df_total=df_rs
+                else:
+                    df_total=df_total.append(df_rs)
+    df_total.to_pickle('../data/processed/dataframes/winds_rs.pkl')
+    
 
                 
                 
@@ -93,6 +105,7 @@ def main():
     #df=collocated_igra_ids(df)
     #df.to_pickle('../data/interim/dataframes/igra_id.pkl')
     df=pd.read_pickle('../data/interim/dataframes/igra_id.pkl')
+    df=df.reset_index(drop=True)
     print(df)
     collocated_winds(df)
 
