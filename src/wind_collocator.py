@@ -72,30 +72,30 @@ def collocated_winds(df):
          
             df_rs=df_rs.loc[df_rs['date']==date]
             if not df_rs.empty:
-                
-                ds_path=obs_time.strftime('../data/processed/%m_%d_%Y_am.nc')
-                dsdate = obs_time.strftime('%m_%d_%Y')
-                ds=xr.open_dataset(ds_path)
-                ds=ds.sel(satellite='snpp')
-                ds=ds.squeeze()
-                
-                ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
-                ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
-                ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
-               
-                df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
-                ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
-                ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
-                    level=df_rs['plev'].values,  method='nearest')
-               
-                df_s=ds.to_dataframe().reset_index()
-                df_m=ds_model.to_dataframe().reset_index()
-
-                df_rs=df_calculator(df_rs, df_s, df_m, lat, lon, lat_rs, lon_rs)
-                if df_total.empty:
-                    df_total=df_rs
-                else:
-                    df_total=df_total.append(df_rs)
+                for orbit in ('am','pm'):
+                    ds_path=obs_time.strftime('../data/processed/%m_%d_%Y')+'_'+orbit+'.nc'
+                    dsdate = obs_time.strftime('%m_%d_%Y')
+                    ds=xr.open_dataset(ds_path)
+                    ds=ds.sel(satellite='snpp')
+                    ds=ds.squeeze()
+                    
+                    ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
+                    ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
+                    ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
+                   
+                    df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
+                    ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
+                    ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
+                        level=df_rs['plev'].values,  method='nearest')
+                   
+                    df_s=ds.to_dataframe().reset_index()
+                    df_m=ds_model.to_dataframe().reset_index()
+    
+                    df_rs=df_calculator(df_rs, df_s, df_m, lat, lon, lat_rs, lon_rs)
+                    if df_total.empty:
+                        df_total=df_rs
+                    else:
+                        df_total=df_total.append(df_rs)
     df_total.to_pickle('../data/processed/dataframes/winds_rs_model.pkl')
     
 

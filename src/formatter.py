@@ -8,13 +8,16 @@ Created on Sun Feb 14 15:21:36 2021
 import xarray as xr
 import xesmf as xe
 import numpy as np
+import amv_calculators as ac
+import config as c
 from datetime import datetime
 from datetime import timedelta
 
-PATH='../data/raw/CLIMCAPS_july/'
+month_string=c.MONTH.strftime("%B").lower()
+PATH='../data/raw/CLIMCAPS'+'_'+ month_string+'/'
 label='specific_humidity_mu'
 labels=['specific_humidity_mean','specific_humidity_sdev']
-QC='qc'
+QC=c.QC
 def regridder(ds):
     latmax = ds['latitude'].max().item()
     latmin = ds['latitude'].min().item()
@@ -35,22 +38,14 @@ def regridder(ds):
 
     ds_out = xr.Dataset(
            {'lat': (['lat'], new_lat), 'lon': ('lon', new_lon)})
-   # regridder = xe.Regridder(ds[['lat','lon']], ds_out, 'bilinear', reuse_weights=True)
     ds_t=ds[labels].transpose('plev','lat','lon')
-    #ds_r = regridder(ds_t[labels])
-    #ds_r['pressure']=(['plev'],ds['pressure'].values)
-   #ds_r['obs_time']=(['plev'],ds['pressure'].values)
     return ds
 
 def ds_unit_calc(day,time,satellite):
     day_string=day.strftime("%Y%m%d")
-    print(day_string)
     d0=datetime(1993, 1, 1)   
     
-    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg_'+QC+'.nc')
-    
-    #ds=regridder(ds)   
-    
+    ds=xr.open_dataset(PATH+ 'climcaps_'+ day_string+'_'+time+'_'+satellite+'_gridded_specific_humidity_1deg_'+QC+'.nc')    
     df=ds.to_dataframe()
     df=df.reset_index()
     df=df.set_index(['latitude','longitude','plev'])
@@ -68,7 +63,6 @@ def ds_unit_calc(day,time,satellite):
     dt_sec[mask]=np.nan
     ds['obs_time']=(['latitude','longitude','plev'],dt_sec)
     
-    #ds=ds.rename({'Lat':'lat','Lon':'lon','plev':'pressure'})
     ds = ds.expand_dims('day').assign_coords(day=np.array([day]))
     ds = ds.expand_dims('time').assign_coords(time=np.array([time]))
     ds = ds.expand_dims('satellite').assign_coords(satellite=np.array([satellite]))
@@ -99,7 +93,10 @@ def time_loop(times, satellites, day):
 def main():
     times=['am','pm']
     satellites=['j1','snpp']
-    days=[datetime(2020,7,1)]
+    start_date=c.MONTH
+    end_date=c.MONTH + timedelta(days=6)
+    
+    days=ac.daterange(start_date, end_date, 24)
 
     ds_total=xr.Dataset() 
     for day in days:    
@@ -110,8 +107,7 @@ def main():
         else:       
             ds_total = xr.concat([ds_total, ds_unit], 'day')
     print(ds_total)
-    #ds_total=ds_total.transpose()
-    ds_total.to_netcdf('../data/processed/real_water_vapor_'+QC+'.nc')
+    ds_total.to_netcdf('../data/processed/real_water_vapor_'+QC+'_'+month_string+'.nc')
  
     
 if __name__=="__main__":

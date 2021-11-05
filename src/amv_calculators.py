@@ -14,6 +14,7 @@ import inpainter
 import quiver
 import first_stage_amv as fsa
 import cross_section as cs
+from datetime import timedelta
 
 
 
@@ -28,6 +29,15 @@ np.seterr(divide='ignore')
 
 
 LABEL='specific_humidity_mean'
+
+def daterange(start_date, end_date, dhour):
+    date_list = []
+    delta = timedelta(hours=dhour)
+    while start_date <= end_date:
+        date_list.append(start_date)
+        start_date += delta
+    return date_list
+
 
 
 def calc(frame0, frame):

@@ -13,7 +13,13 @@ import time
 import pandas as pd
 import era5_downloader as ed
 from datetime import datetime 
+import config as c
+
 pd.options.mode.chained_assignment = None  # default='warn'
+
+month_string=c.MONTH.strftime("%B").lower()
+QC=c.QC
+
 
 ALG='farneback'
 
@@ -30,14 +36,20 @@ swath_hours=24
 
 LABEL='specific_humidity_mean'
 
-def model_closer(date,ds,time):
+def ds_closer(date,ds,time):
     date = pd.to_datetime(str(date)) 
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    #os.remove('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
     ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'_'+time+'.nc')
-   
+ 
+def model__closer(date,time):
+    date = pd.to_datetime(str(date)) 
+    year = date.strftime('%Y')
+    month = date.strftime('%m')
+    day  = date.strftime('%d')
+    os.remove('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+    
 
 def model_loader(date, pressure):
     date = pd.to_datetime(str(date)) 
@@ -85,17 +97,15 @@ def ds_unit_calc(ds, day,pressure, time):
 
 
 def serial_loop(ds):
-    #for day in ds['day'].values:
-    for day in [datetime(2020,7,1)]:
+    for day in ds['day'].values:
         print(day)
         ed.downloader(day)
-        
-        ds_unit=xr.Dataset()
-        for pressure in ds['plev'].values:
-            ds_unit1=xr.Dataset()
-            print('pressure:')
-            print(pressure)
-            for time in ['am']:  
+        for time in ds['time'].values: 
+            ds_unit=xr.Dataset()
+            for pressure in ds['plev'].values:
+                ds_unit1=xr.Dataset()
+                print('pressure:')
+                print(pressure)
                 print('time')
                 print(time)
                 ds_unit0=ds_unit_calc(ds, day,pressure, time)
@@ -111,13 +121,13 @@ def serial_loop(ds):
                 ds_unit=ds_unit1
             else:
                 ds_unit=xr.concat([ds_unit,ds_unit1], 'plev') 
-        model_closer(day,ds_unit,time)
+            ds_closer(day,ds_unit,time)
+        model_closer(day,time)
 
 
         
 def main():
-    #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc.nc', chunks={"plev": 20})
-    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_'+ month_string +'.nc')
     serial_loop(ds)
     
    

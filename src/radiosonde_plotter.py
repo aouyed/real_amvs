@@ -79,6 +79,7 @@ def preprocess(df):
 def main():
     df=pd.read_pickle('../data/processed/dataframes/winds_rs.pkl')
     df=preprocess(df)
+    df=df.drop_duplicates()
     #delta=timedelta(hours=1.5)
 
     #df=df[df.deltat<delta]    

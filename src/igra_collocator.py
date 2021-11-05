@@ -8,7 +8,11 @@ import numpy as np
 import igra
 import time
 from tqdm import tqdm
+import os.path
 from siphon.simplewebservice.igra2 import IGRAUpperAir
+
+PATH='../data/interim/rs_dataframes/'
+
 HOURS=1.5 
 
 
@@ -32,30 +36,32 @@ def space_time_collocator(days, deltat):
     df=pd.DataFrame()
     for day in days:
         print(day)
-        time='am'
-        dsdate = day.strftime('%m_%d_%Y')
-        ds = xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
-        ds-ds.sel(satellite='snpp')
-        df_unit=ds[['obs_time','u']].to_dataframe()
-        df_unit=df_unit.reset_index()
-        df_unit=df_unit[['latitude','longitude','obs_time','u']]
-        first_rao=datetime(day.year, day.month, day.day, 0)
-        second_rao=datetime(day.year, day.month, day.day, 12)
-        condition1=df_unit['obs_time'].between(first_rao-deltat,first_rao+deltat)
-        condition2=df_unit['obs_time'].between(second_rao-deltat,second_rao+deltat)
-        df_unit=df_unit.loc[condition1 | condition2]
-        df_unit=df_unit.drop_duplicates(ignore_index=True)
-        df_unit=df_unit.dropna()
+        for time in ('am','pm'):
+            dsdate = day.strftime('%m_%d_%Y')
+            ds = xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
+            ds-ds.sel(satellite='snpp')
+            df_unit=ds[['obs_time','u']].to_dataframe()
+            df_unit=df_unit.reset_index()
+            df_unit=df_unit[['latitude','longitude','obs_time','u']]
+            first_rao=datetime(day.year, day.month, day.day, 0)
+            second_rao=datetime(day.year, day.month, day.day, 12)
+            condition1=df_unit['obs_time'].between(first_rao-deltat,first_rao+deltat)
+            condition2=df_unit['obs_time'].between(second_rao-deltat,second_rao+deltat)
+            df_unit=df_unit.loc[condition1 | condition2]
+            df_unit=df_unit.dropna()
+            df_unit=df_unit[['latitude','longitude','obs_time']]
+            df_unit=df_unit.drop_duplicates()
+                
+            if df.empty:
+                df=df_unit
+            else:
+                df=df.append(df_unit)
+    df=df.reset_index(drop=True)
+    df=df.drop_duplicates()
+    return df
         
-        if df.empty:
-            df=df_unit
-        else:
-            df=df.append(df_unit)
-    return df[['latitude','longitude','obs_time']]
-        
-def collocate_igra(stations, latlon):
-    lat=latlon[0]
-    lon=latlon[1]
+def collocate_igra(stations, lat, lon):
+
     
     condition1=stations['lat'].between(lat-1,lat+1)
     condition2=stations['lon'].between(lon-1,lon+1)
@@ -66,23 +72,22 @@ def collocate_igra(stations, latlon):
     
     
 def collocated_igra_ids(df):
+     df=df.reset_index(drop=True)
      start_time = time.time()
      stations = igra.download.stationlist('/tmp')
-     lat=df['latitude'].values
-     lon=df['longitude'].values
-     times=df['obs_time'].values
-     latlons=list(zip(lat,lon, times))
+
      station_dict={'lat':[],'lon':[],'lon_rs':[],'lat_rs':[],'stationid':[],'obs_time':[]}
-     for latlon in tqdm(latlons):
-         df_unit=collocate_igra(stations, latlon)
+     for latlon in tqdm(df.values):
+         lat,lon,obs_time = latlon
+         df_unit=collocate_igra(stations, lat, lon)
          if not df_unit.empty:
              ids=df_unit.index.values.tolist()
-             station_dict['lat'].append(latlon[0])
-             station_dict['lon'].append(latlon[1])
+             station_dict['lat'].append(lat)
+             station_dict['lon'].append(lon)
              station_dict['lat_rs'].append(df_unit['lat'].values[0])
              station_dict['lon_rs'].append(df_unit['lon'].values[0])
              station_dict['stationid'].append(ids[0])
-             station_dict['obs_time'].append(latlon[2])
+             station_dict['obs_time'].append(obs_time)
              
      output_df=pd.DataFrame(data=station_dict)
      print("--- %s seconds ---" % (time.time() - start_time))    
@@ -91,63 +96,36 @@ def collocated_igra_ids(df):
  
     
 
-            
-
-def collocated_winds(df):
-    
-    for station in df[['stationid','obs_time']].values:
-        date=station[1]
-        stationid=station[0]
-        if date.hour> (24-HOURS):
-            date=datetime(date.year,date.month, date.day+1,0)
-        elif date.hour<= HOURS:
-            date=datetime(date.year,date.month, date.day,0)
-        else:
-            date=datetime(date.year,date.month, date.day,12)
-            
-            
-        print(station)
-        print(date)
-        start_time = time.time()
-
-        df, header = IGRAUpperAir.request_data(date, stationid)
-        print("--- %s seconds ---" % (time.time() - start_time))    
-
 
 
 
 def igra_downloader(df,days):
     station_list=np.unique(df['stationid'].values)
-    for station in station_list[49:]:
-        print(station)
-        df_total=pd.DataFrame()
-
-        for day in days:
-
-            print(day)
-            first_rao=datetime(day.year, day.month, day.day, 0)
-            second_rao=datetime(day.year, day.month, day.day, 12)
-            for date in (first_rao, second_rao):
-                start_time = time.time()
-
-                try:
-                    df_unit, header = IGRAUpperAir.request_data(date, station)
-                    df_unit['date']=date
-                    df_unit['stationid']=station
-                    if df_total.empty:
-                        df_total=df_unit
-                    else:
-                        df_total=df_total.append(df_unit)
-                except Exception as e:
-                    print("type error: " + str(e))
+    for station in tqdm(station_list):
+        fname=PATH+station+'.pkl'
+        if not os.path.isfile(fname):
+            df_total=pd.DataFrame()
     
-                print("--- %s seconds ---" % (time.time() - start_time))    
-        print(df_total)
-        if not df_total.empty:
-            df_total.to_pickle('../data/interim/rs_dataframes/' + station +'.pkl')
-
-
-            
+            for day in days:
+    
+                first_rao=datetime(day.year, day.month, day.day, 0)
+                second_rao=datetime(day.year, day.month, day.day, 12)
+                for date in (first_rao, second_rao):    
+                    try:
+                        df_unit, header = IGRAUpperAir.request_data(date, station)
+                        df_unit['date']=date
+                        df_unit['stationid']=station
+                        if df_total.empty:
+                            df_total=df_unit
+                        else:
+                            df_total=df_total.append(df_unit)
+                    except Exception as e:
+                        pass
+            if not df_total.empty:
+                df_total.to_pickle('../data/interim/rs_dataframes/' + station +'.pkl')
+    
+    
+                
             
     
          
@@ -159,12 +137,11 @@ def igra_downloader(df,days):
 def main():
     deltat=timedelta(hours=HOURS)
     days = daterange(datetime(2020, 7, 1), datetime(2020, 7, 7), 24)
-    df=space_time_collocator(days, deltat)
-    df=collocated_igra_ids(df)
-    df.to_pickle('../data/interim/dataframes/igra_id.pkl')
+    #df=space_time_collocator(days, deltat)
+    #df=collocated_igra_ids(df)
+    #df.to_pickle('../data/interim/dataframes/igra_id.pkl')
     df=pd.read_pickle('../data/interim/dataframes/igra_id.pkl')
-    print(df)
-    #igra_downloader(df,days)
+    igra_downloader(df,days)
 
 
 
