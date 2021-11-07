@@ -14,6 +14,7 @@ import pandas as pd
 import era5_downloader as ed
 from datetime import datetime 
 import config as c
+from tqdm import tqdm
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -41,9 +42,10 @@ def ds_closer(date,ds,time):
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
+    print(ds)
     ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'_'+time+'.nc')
  
-def model__closer(date,time):
+def model_closer(date):
     date = pd.to_datetime(str(date)) 
     year = date.strftime('%Y')
     month = date.strftime('%m')
@@ -65,7 +67,6 @@ def model_loader(date, pressure):
         latitude=5, longitude=5, center=True).mean()
     ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
     ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
-    print(ds_model)
     return ds_model
     
     
@@ -76,13 +77,11 @@ def ds_unit_calc(ds, day,pressure, time):
     ds_model=model_loader(day,pressure)
     df=ds.to_dataframe()
     swathes=calc.swath_initializer(ds,5,swath_hours)
-    print('swathes prepared')
     for swath in swathes:
         ds_snpp=ds.loc[{'satellite':'snpp'}]
         ds_j1=ds.loc[{'satellite':'j1'}]
         start=swath[0]
         end=swath[1]
-        print(swath[0])
         ds_merged, ds_snpp, ds_j1, df_snpp=calc.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
    
         if (df_snpp.shape[0]>100):
@@ -101,28 +100,20 @@ def serial_loop(ds):
         print(day)
         ed.downloader(day)
         for time in ds['time'].values: 
-            ds_unit=xr.Dataset()
-            for pressure in ds['plev'].values:
-                ds_unit1=xr.Dataset()
-                print('pressure:')
-                print(pressure)
-                print('time')
-                print(time)
-                ds_unit0=ds_unit_calc(ds, day,pressure, time)
-                ds_unit0 = ds_unit0.expand_dims('day').assign_coords(day=np.array([day]))
-                ds_unit0 = ds_unit0.expand_dims('time').assign_coords(time=np.array([time]))
-                ds_unit0 = ds_unit0.expand_dims('plev').assign_coords(plev=np.array([pressure]))
+            ds_total=xr.Dataset()
+            for pressure in tqdm(ds['plev'].values):
+                ds_unit = ds_unit_calc(ds, day,pressure, time)
+                ds_unit = ds_unit.expand_dims('day').assign_coords(day=np.array([day]))
+                ds_unit = ds_unit.expand_dims('time').assign_coords(time=np.array([time]))
+                ds_unit = ds_unit.expand_dims('plev').assign_coords(plev=np.array([pressure]))
                 
-                if not ds_unit1:
-                    ds_unit1=ds_unit0
+                if not ds_total:
+                    ds_total=ds_unit
                 else:
-                    ds_unit1=xr.concat([ds_unit1,ds_unit0],'time')
-            if not ds_unit:
-                ds_unit=ds_unit1
-            else:
-                ds_unit=xr.concat([ds_unit,ds_unit1], 'plev') 
-            ds_closer(day,ds_unit,time)
-        model_closer(day,time)
+                    ds_total=xr.concat([ds_total,ds_unit],'plev')
+                
+            ds_closer(day,ds_total,time)
+        model_closer(day)
 
 
         

@@ -16,7 +16,7 @@ from natsort import natsorted
 from matplotlib.pyplot import cm
 
 
-THRESHOLDS=[4,10,100]
+THRESHOLDS=[10,4,100]
 
 
 def calc_days(thresh):

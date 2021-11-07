@@ -17,15 +17,15 @@ import quiver
 import cartopy.crs as ccrs
 from datetime import datetime 
 import stats_pressurer as sp
-
+import config as c
 
 
 SCALE=1e4
 scale_g=1000
-PRESSURES=[850, 700, 500, 400]
-GEODESICS={'swath':[(-47.5, -60), (45, -30),'latitude'],
-                'equator':[(6.5, -149.5),(6.5, 4.5),'longitude']}
+PRESSURES=c.PRESSURES
+GEODESICS=c.GEODESICS
 
+month_string=c.MONTH.strftime("%B").lower()
 
 
 def shear_calc(ds, tag=''):
@@ -110,6 +110,8 @@ def inset_plot(geodesic, fig):
     
     
 def multiple_quiver(ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m/s'):
+    
+    
     fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
@@ -210,6 +212,7 @@ def latlon_uniques(ds):
 
 
 def cross_sequence(ds, thresh, time):
+
     ds=ds.drop('obs_time')
     ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',earth_radius=6371229.0)
     data = ds.metpy.parse_cf().squeeze()
@@ -222,28 +225,29 @@ def cross_sequence(ds, thresh, time):
         xlabel=geodesic[2]
         cross = cross_section(data, start, end, interp_type='nearest').set_coords(('latitude', 'longitude'))
         cross=cross.reindex(plev=list(reversed(cross.plev)))
-        multiple_quiver(cross, 'quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
+        multiple_quiver(cross, month_string+'_quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
        
 
     
 
 def main():
     time='am'
-    
-    for thresh in sp.THRESHOLDS:
-        ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')
-        
-        date=datetime(2020,7,1)
+    dsdate=c.MONTH.strftime('%m_%d_%Y')
+    for thresh in c.THRESHOLDS:
+        ds=xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
+        date=c.MONTH
         ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
         ds['humidity_overlap']=scale_g*ds['humidity_overlap']
         ds=preprocess(ds,thresh)
         data=ds['u'].values
         print(np.count_nonzero(~np.isnan(data)))
+        #quiver.quiver_plot_cartopy(ds,'qtest_era5', 'u_era5', 'v_era5')
+        #breakpoint()
 
         cross_sequence(ds, thresh, time)
-        four_panel_quiver_map(ds, 'quiver_am_p1'+str(thresh),str( thresh),[850,700])    
-        four_panel_quiver_map(ds, 'quiver_am_p2'+str(thresh),str( thresh),[500,400])    
-
+        four_panel_quiver_map(ds, month_string+'_quiver_am_p1'+str(thresh),str( thresh),[850,700])    
+        four_panel_quiver_map(ds, month_string+'_quiver_am_p2'+str(thresh),str( thresh),[500,400])    
+        
 
    
     

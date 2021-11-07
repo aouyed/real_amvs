@@ -31,14 +31,13 @@ def quiver_plot(ds, title, u, v):
     
 def quiver_plot_cartopy(ds, title, u, v):
     ds=ds.coarsen(latitude=5, longitude=5, boundary='trim').mean()
-    fig, ax = plt.subplots()
+    fig=plt.figure()
     X, Y = np.meshgrid(ds['longitude'].values, ds['latitude'].values)
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines()
-    ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
     Q = ax.quiver(X, Y, np.squeeze(
         ds[u].values), np.squeeze(ds[v].values))
-    qk = ax.quiverkey(Q, 0.8, 0.9, 5, r'5 m/s', labelpos='E',
+    qk = ax.quiverkey(Q, 0.5, 0.5, 10, r'10 m/s', labelpos='E',
                       coordinates='figure')
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title+'.png',

@@ -1,15 +1,12 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Aug 13 16:15:10 2021
 
-@author: aouyed
-"""
 import cdsapi
 import pandas as pd 
-import radiosonde_collocator as rc
+import amv_calculators as ac
 from datetime import datetime 
+from datetime import timedelta 
 import xarray as xr
+import config as c
+import first_stage_amv as fsa
 
 def downloader(date):
   
@@ -69,8 +66,11 @@ def loader():
 
 
 def main():
-    date_list=rc.daterange(datetime(2020,7,1), datetime(2020,7,7), 24)
-    for date in date_list:
+    start_date=c.MONTH
+    end_date=c.MONTH + timedelta(days=6)
+    days=ac.daterange(start_date, end_date, 24)
+    for date in days:
+        downloader(date)
         print(date)
         year = date.strftime('%Y')
         month = date.strftime('%m')
@@ -79,7 +79,7 @@ def main():
         ds=ds[['u','v']].coarsen(latitude=4, longitude=4, boundary='trim').mean()
         print(ds)
         ds.to_netcdf('../data/interim/coarse_model_'+month+'_'+day+'_'+year+'.nc')
-         
+        fsa.model_closer(date)
 
      
         
