@@ -59,7 +59,6 @@ def cloud_filter(ds,date):
     return ds
 
 def preprocess(ds, thresh):
-    print('preprocessing...')
     ds=ds.drop(['day','satellite','time','flowx','flowy'])
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
@@ -72,7 +71,6 @@ def preprocess(ds, thresh):
     ds=ds.where(condition)
     if thresh>0:
         ds=ds.where(ds['error_mag']<thresh)
-    print('end of preprocessing')
     return ds
 
     

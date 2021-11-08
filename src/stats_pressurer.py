@@ -14,58 +14,62 @@ import glob
 import cross_section as cs
 from natsort import natsorted
 from matplotlib.pyplot import cm
+import config as c
+from tqdm import tqdm
+import amv_calculators as ac
+from datetime import timedelta 
+
+THRESHOLDS=c.THRESHOLDS
 
 
-THRESHOLDS=[10,4,100]
+def calc_days(thresh, days):
 
-
-def calc_days(thresh):
-    file_names=natsorted(glob.glob('../data/processed/07*20*.nc'))
-    for file_name in file_names: 
-        d={'pressure':[],'error_sum':[],'speed_sum':[],
-           'denominator':[],'yield':[]}
-        print(file_name)
-        ds=xr.open_dataset(file_name)
-        ds=ds.loc[{'satellite':'snpp'}]
-        ds=cs.preprocess(ds, thresh)      
-        for pressure in ds['plev'].values:
-            ds_unit=ds.sel(plev=pressure, method='nearest')
-            error_sum=sc.weighted_sum(ds_unit['squared_error'])
-            speed_sum=sc.weighted_sum(ds_unit['speed'])
-            data=ds_unit['squared_error'].values
-            counts=np.count_nonzero(~np.isnan(data))
-
-            denominator= sc.weights_sum(ds_unit['squared_error'])
-            pressure=int(round(pressure))
-            print(pressure)
-            d['pressure'].append(pressure)
-            d['error_sum'].append(error_sum)
-            d['speed_sum'].append(speed_sum)
-            d['denominator'].append(denominator)
-            d['yield'].append(counts)
-        df=pd.DataFrame(data=d)
-        df.set_index('pressure', drop=True)
-        df.to_csv('../data/interim/dataframes/t'+str(thresh)+'_'+file_name[18:28] + '.csv')
     
-def calc_pressure(thresh):
+    for day in tqdm(days):
+        for time in ('am','pm'):
+            d={'pressure':[],'error_sum':[],'speed_sum':[],
+               'denominator':[],'yield':[]}
+            file_name= day.strftime('../data/processed/%m_%d_%Y_')+time +'.nc'
+            ds=xr.open_dataset(file_name)
+            ds=ds.loc[{'satellite':'snpp'}]
+            ds=cs.preprocess(ds, thresh)      
+            for pressure in ds['plev'].values:
+                ds_unit=ds.sel(plev=pressure, method='nearest')
+                error_sum=sc.weighted_sum(ds_unit['squared_error'])
+                speed_sum=sc.weighted_sum(ds_unit['speed'])
+                data=ds_unit['squared_error'].values
+                counts=np.count_nonzero(~np.isnan(data))
+    
+                denominator= sc.weights_sum(ds_unit['squared_error'])
+                pressure=int(round(pressure))
+                d['pressure'].append(pressure)
+                d['error_sum'].append(error_sum)
+                d['speed_sum'].append(speed_sum)
+                d['denominator'].append(denominator)
+                d['yield'].append(counts)
+            df=pd.DataFrame(data=d)
+            df.set_index('pressure', drop=True)
+            df.to_csv('../data/interim/dataframes/t'+str(thresh)+'_'+day.strftime('%m_%d_%Y_') + time + '.csv')
+    return df['pressure'].values
+    
+def calc_pressure(thresh, pressures, days):
+    dsdate = c.MONTH.strftime('_m_*_%Y*.csv')
     d={'pressure':[],'rmsvd':[],'speed':[], 'yield': []}
-    file_names=natsorted(glob.glob('../data/interim/dataframes/t'+str(thresh)+'_07*20.csv'))
-    print(file_names)
-    df=pd.read_csv(file_names[0])
-    pressures=df['pressure'].values
-    df=df.set_index('pressure',drop=True)
-    for pressure in pressures:
+
+    for pressure in tqdm(pressures):
         error_sum=0
         speed_sum=0
         denominator=0
         yield_sum=0
-        for file in file_names:
-            df_unit=pd.read_csv(file)
-            df_unit=df_unit.set_index('pressure',drop=True)
-            error_sum=error_sum+df_unit.loc[pressure,'error_sum']
-            speed_sum=speed_sum+df_unit.loc[pressure,'speed_sum']
-            yield_sum=yield_sum+df_unit.loc[pressure,'yield']
-            denominator=denominator + df_unit.loc[pressure,'denominator']
+        for day in days:
+            for time in ('am','pm'):
+                file= '../data/interim/dataframes/t'+str(thresh)+'_'+day.strftime('%m_%d_%Y_') + time + '.csv'
+                df_unit=pd.read_csv(file)
+                df_unit=df_unit.set_index('pressure',drop=True)
+                error_sum=error_sum+df_unit.loc[pressure,'error_sum']
+                speed_sum=speed_sum+df_unit.loc[pressure,'speed_sum']
+                yield_sum=yield_sum+df_unit.loc[pressure,'yield']
+                denominator=denominator + df_unit.loc[pressure,'denominator']
         d['pressure'].append(pressure)
         d['speed'].append(speed_sum/denominator)
         d['rmsvd'].append(np.sqrt(error_sum/denominator))
@@ -74,7 +78,7 @@ def calc_pressure(thresh):
     df=pd.DataFrame(data=d)
     print(df)
     df.set_index('pressure', drop=True)
-    df.to_csv('../data/processed/dataframes/rmsvd_t'+str(thresh)+'.csv')
+    df.to_csv('../data/processed/dataframes/'+c.month_string+'_rmsvd_t'+str(thresh)+'.csv')
     
         
 def  plot_rmsvd(ax, df, width, thresh):
@@ -105,7 +109,7 @@ def line_plotter(func, ax):
     for i, thresh in enumerate(reversed(THRESHOLDS)):
         #color=colors[i]
         width=widths[i]
-        df=pd.read_csv('../data/processed/dataframes/rmsvd_t'+str(thresh)+'.csv')
+        df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_rmsvd_t'+str(thresh)+'.csv')
         func(ax, df, width, thresh)
     ax.legend(frameon=False)
     ax.set_ylabel("Pressure [hPa]")
@@ -127,13 +131,17 @@ def multiple_lineplots(title, plot_rmsvd,plot_yield):
     
     
 def threshold_fun():
+    start_date=c.MONTH
+    end_date=c.MONTH + timedelta(days=6)
+    days=ac.daterange(start_date, end_date, 24)
+    
     for thresh in THRESHOLDS:
-        calc_days(thresh)
-        calc_pressure(thresh)
+        pressures=calc_days(thresh, days)
+        calc_pressure(thresh, pressures, days)
     
 def main():
-    #threshold_fun()
-    multiple_lineplots('pressure_plots', plot_rmsvd,plot_yield)
+    threshold_fun()
+    multiple_lineplots(c.month_string+'_pressure_plots', plot_rmsvd,plot_yield)
     
 
 

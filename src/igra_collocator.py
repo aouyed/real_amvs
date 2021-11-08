@@ -145,8 +145,8 @@ def main():
     #df=df.reset_index(drop=True)
     #df=df.drop_duplicates()
     #df=collocated_igra_ids(df)
-    #df.to_pickle('../data/interim/dataframes/'+month_string+'igra_id.pkl')
-    df=pd.read_pickle('../data/interim/dataframes/'+month_string+'igra_id.pkl')
+    df.to_pickle('../data/interim/dataframes/'+month_string+'_igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+month_string+'_igra_id.pkl')
     print(df)
     igra_downloader(df,days, month_string)
 

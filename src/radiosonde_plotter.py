@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import timedelta
 import matplotlib.pyplot as plt
 import numpy as np
+import config as c
 
 
 THRESHOLDS=[10,4]
@@ -61,7 +62,7 @@ def pressure_plot(df,rmsvd_label, title):
     ax.set_ylim(df['plev'].max(), df['plev'].min())
     ax.set_yticks(np.arange(900, 50, -100))
     ax.set_title(title)
-    plt.savefig('../data/processed/plots/radiosonde_comparison.png', dpi=300)
+    plt.savefig('../data/processed/plots/'+c.month_string+'_radiosonde_comparison.png', dpi=300)
     plt.show()
     plt.close()
            
@@ -77,7 +78,7 @@ def preprocess(df):
 
 
 def main():
-    df=pd.read_pickle('../data/processed/dataframes/winds_rs.pkl')
+    df=pd.read_pickle('../data/processed/dataframes/' + c.month_string + '_winds_rs_model.pkl')
     df=preprocess(df)
     df=df.drop_duplicates()
     #delta=timedelta(hours=1.5)
