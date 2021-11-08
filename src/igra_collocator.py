@@ -1,5 +1,4 @@
 
-import glob
 from datetime import datetime
 import pandas as pd
 import xarray as xr
@@ -9,6 +8,8 @@ import igra
 import time
 from tqdm import tqdm
 import os.path
+import config as c
+import amv_calculators as ac
 from siphon.simplewebservice.igra2 import IGRAUpperAir
 
 PATH='../data/interim/rs_dataframes/'
@@ -99,10 +100,10 @@ def collocated_igra_ids(df):
 
 
 
-def igra_downloader(df,days):
+def igra_downloader(df,days, month_string):
     station_list=np.unique(df['stationid'].values)
     for station in tqdm(station_list):
-        fname=PATH+station+'.pkl'
+        fname=PATH+month_string+'_' +station+'.pkl'
         if not os.path.isfile(fname):
             df_total=pd.DataFrame()
     
@@ -122,7 +123,7 @@ def igra_downloader(df,days):
                     except Exception as e:
                         pass
             if not df_total.empty:
-                df_total.to_pickle('../data/interim/rs_dataframes/' + station +'.pkl')
+                df_total.to_pickle('../data/interim/rs_dataframes/' + month_string+'_' +station +'.pkl')
     
     
                 
@@ -136,12 +137,18 @@ def igra_downloader(df,days):
 
 def main():
     deltat=timedelta(hours=HOURS)
-    days = daterange(datetime(2020, 7, 1), datetime(2020, 7, 7), 24)
+    start_date=c.MONTH
+    end_date=c.MONTH + timedelta(days=6)
+    days=ac.daterange(start_date, end_date, 24)
+    month_string=c.month_string
     #df=space_time_collocator(days, deltat)
+    #df=df.reset_index(drop=True)
+    #df=df.drop_duplicates()
     #df=collocated_igra_ids(df)
-    #df.to_pickle('../data/interim/dataframes/igra_id.pkl')
-    df=pd.read_pickle('../data/interim/dataframes/igra_id.pkl')
-    igra_downloader(df,days)
+    #df.to_pickle('../data/interim/dataframes/'+month_string+'igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+month_string+'igra_id.pkl')
+    print(df)
+    igra_downloader(df,days, month_string)
 
 
 
