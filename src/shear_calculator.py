@@ -11,12 +11,15 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 from datetime import datetime 
+from datetime import timedelta
 import stats_calculators as sc
 import cross_section as cs
 from matplotlib.pyplot import cm
 import glob
-
-THRESHOLDS=[4,10,100]
+import config as c
+import amv_calculators as ac
+from tqdm import tqdm
+THRESHOLDS=c.THRESHOLDS
 
 
 def preprocess(ds, thresh):
@@ -48,32 +51,33 @@ def edge_calculator():
 def calc_shear(thresh):
     shear_dict={'edges':[],'shear':[],'shear_era5':[]}
     edges=edge_calculator()
-    file_names=glob.glob('../data/processed/07*2020*.nc')
-    print(file_names)
-
-    for edge in edges:
-        print(edge)
+    start_date=c.MONTH
+    end_date=c.MONTH + timedelta(days=6)
+    days=ac.daterange(start_date, end_date, 24)
+    
+    for edge in tqdm(edges):
         sums={'error':0, 'shear':0, 'shear_era5':0,'shear_denominator':0}
-        for file_name in file_names:
-            ds=xr.open_dataset(file_name)
-            ds_unit=ds.sel(latitude=slice(edge[1],edge[0]))
-            ds_unit=ds_unit.loc[{'satellite':'snpp'}]
-            ds_unit=preprocess(ds_unit,thresh)
-            shear=cs.shear_two_levels(ds_unit)
-            shear_era5=cs.shear_two_levels(ds_unit,'_era5')
-
-            sums['shear']= sums['shear']+ sc.weighted_sum(shear)
-            sums['shear_era5']= sums['shear_era5']+ sc.weighted_sum(shear_era5)
-            sums['shear_denominator']= sums['shear_denominator']+ sc.weights_sum(shear_era5)
-          
+        for day in days:
+            for time in ('am','pm'):
+                file_name= day.strftime('../data/processed/%m_%d_%Y_')+time +'.nc'
+                ds=xr.open_dataset(file_name)
+                ds_unit=ds.sel(latitude=slice(edge[1],edge[0]))
+                ds_unit=ds_unit.loc[{'satellite':'snpp'}]
+                ds_unit=preprocess(ds_unit,thresh)
+                shear=cs.shear_two_levels(ds_unit)
+                shear_era5=cs.shear_two_levels(ds_unit,'_era5')
+    
+                sums['shear']= sums['shear']+ sc.weighted_sum(shear)
+                sums['shear_era5']= sums['shear_era5']+ sc.weighted_sum(shear_era5)
+                sums['shear_denominator']= sums['shear_denominator']+ sc.weights_sum(shear_era5)
+              
            
         edge=sc.coord_to_string(edge)
-        print(edge)
         shear_dict['edges'].append(edge)
         shear_dict['shear'].append(sums['shear']/sums['shear_denominator'])
         shear_dict['shear_era5'].append(sums['shear_era5']/sums['shear_denominator'])
     df=pd.DataFrame(data=shear_dict)
-    df.to_csv('../data/processed/dataframes/t'+str(thresh)+'_shear.csv')
+    df.to_csv('../data/processed/dataframes/'+c.month_string+'_t'+str(thresh)+'_shear.csv')
     print(df)
     return df
 
@@ -82,7 +86,7 @@ def line_plotter(label):
     fig, ax = plt.subplots()
     colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
     for i, thresh in enumerate(THRESHOLDS):
-        df=pd.read_csv('../data/processed/dataframes/t'+str(thresh)+'_shear.csv')
+        df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_t'+str(thresh)+'_shear.csv')
         ax.plot(df['edges'], df[label], '-o', label='δ = '+str(thresh)+' m/s', color=colors[i])
         ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='era5, δ = '+str(thresh)+' m/s', color=colors[i])
     
@@ -92,13 +96,13 @@ def line_plotter(label):
     ax.set_xlabel("Region")
     ax.set_ylabel('Shear [m/s]')
     plt.xticks(rotation=45, ha="right")
-    plt.savefig('../data/processed/plots/line_plots.png', bbox_inches='tight', dpi=300)
+    plt.savefig('../data/processed/plots/'+c.month_string+'_line_plots.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
     
     
 def main():
-    #thresh_loop()
+    thresh_loop()
     line_plotter('shear')
 
    

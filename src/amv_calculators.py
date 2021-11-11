@@ -91,11 +91,11 @@ def swath_initializer(ds, dmins, swath_hours):
     
 
 def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
-    ds_snpp=ds_snpp.where((ds_snpp.obs_time > start) & (ds_snpp.obs_time<end))
+    ds_j1=ds_j1.where((ds_j1.obs_time >= start) & (ds_j1.obs_time <= end))
     model_t=start+np.timedelta64(25, 'm')
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
-    ds_j1=ds_j1.where((ds_j1.obs_time > start) & (ds_j1.obs_time<end))
+    ds_snpp=ds_snpp.where((ds_snpp.obs_time >= start) & (ds_snpp.obs_time <= end))
     
     
     
@@ -130,7 +130,7 @@ def flow_calculator(ds_snpp, ds_j1, ds_merged):
     frame = np.expand_dims(frame, axis=2)
     frame0 = np.expand_dims(frame0, axis=2) 
     dt=ds_merged['obs_time'].loc[
-        {'satellite':'j1'}]-ds_merged['obs_time'].loc[{'satellite':'snpp'}]
+        {'satellite':'snpp'}]-ds_merged['obs_time'].loc[{'satellite':'j1'}]
     dt_int=dt.values.astype('timedelta64[s]').astype(np.int32)
     dt_inv=1/dt_int
     dt_inv[dt_inv==np.inf]=np.nan
