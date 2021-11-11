@@ -118,8 +118,8 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     return ds_merged, ds_snpp, ds_j1, df_snpp
 
 def flow_calculator(ds_snpp, ds_j1, ds_merged):
-    frame0=frame_retreiver(ds_snpp)
-    frame=frame_retreiver(ds_j1)
+    frame0=frame_retreiver(ds_j1)
+    frame=frame_retreiver(ds_snpp)
     flowx,flowy=calc(frame0, frame)
     flowx = np.expand_dims(flowx, axis=2)
     flowy = np.expand_dims(flowy, axis=2)
