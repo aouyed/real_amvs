@@ -103,13 +103,13 @@ def  plot_yield(ax, df, width, thresh):
 
 
     
-def line_plotter(func, ax):
+def line_plotter(func, ax, month):
     colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
     widths=np.linspace(1,3, len(THRESHOLDS))
     for i, thresh in enumerate(reversed(THRESHOLDS)):
         #color=colors[i]
         width=widths[i]
-        df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_rmsvd_t'+str(thresh)+'.csv')
+        df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t'+str(thresh)+'.csv')
         func(ax, df, width, thresh)
     ax.legend(frameon=False)
     ax.set_ylabel("Pressure [hPa]")
@@ -118,11 +118,12 @@ def line_plotter(func, ax):
     return ax
     
     
-def multiple_lineplots(title, plot_rmsvd,plot_yield):
+def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield):
     fig, axes = plt.subplots(nrows=1, ncols=2)
     axlist = axes.flat
-    axlist[0]=line_plotter(plot_rmsvd, axlist[0])
-    axlist[1]=line_plotter(plot_yield, axlist[1])
+    axlist[0]=line_plotter(plot_rmsvd, axlist[0], month)
+    axlist[1]=line_plotter(plot_yield, axlist[1], month)
+    axlist[0].text(-15,95,tag)
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
@@ -140,9 +141,10 @@ def threshold_fun():
         calc_pressure(thresh, pressures, days)
     
 def main():
-    threshold_fun()
-    multiple_lineplots(c.month_string+'_pressure_plots', plot_rmsvd,plot_yield)
-    
+    #threshold_fun()
+    multiple_lineplots('(a)','july','july_pressure_plots', plot_rmsvd,plot_yield)
+    multiple_lineplots('(b)','january','january_pressure_plots', plot_rmsvd,plot_yield)
+
 
 
 if __name__ == '__main__':

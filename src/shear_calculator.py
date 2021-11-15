@@ -82,28 +82,31 @@ def calc_shear(thresh):
     return df
 
 
-def line_plotter(label):
+def line_plotter(label,month_string, tag):
     fig, ax = plt.subplots()
     colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
     for i, thresh in enumerate(THRESHOLDS):
-        df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_t'+str(thresh)+'_shear.csv')
+        df=pd.read_csv('../data/processed/dataframes/'+month_string+'_t'+str(thresh)+'_shear.csv')
         ax.plot(df['edges'], df[label], '-o', label='δ = '+str(thresh)+' m/s', color=colors[i])
-        ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='era5, δ = '+str(thresh)+' m/s', color=colors[i])
+    df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_t100_shear.csv')
+    ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='ERA 5', color ='red')
     
-    
+    ax.text(0.05,0.9,tag, transform=ax.transAxes)
     ax.legend(frameon=None)
     #ax.set_ylim(0, 10)
     ax.set_xlabel("Region")
     ax.set_ylabel('Shear [m/s]')
     plt.xticks(rotation=45, ha="right")
-    plt.savefig('../data/processed/plots/'+c.month_string+'_line_plots.png', bbox_inches='tight', dpi=300)
+    plt.savefig('../data/processed/plots/'+month_string+'_line_plots.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
     
     
 def main():
-    thresh_loop()
-    line_plotter('shear')
+    #thresh_loop()
+     line_plotter('shear','january', '(a)')
+     line_plotter('shear','july', '(b)')
+
 
    
 if __name__ == '__main__':

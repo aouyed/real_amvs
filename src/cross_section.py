@@ -232,10 +232,17 @@ def main():
     time='am'
     dsdate=c.MONTH.strftime('%m_%d_%Y')
     for thresh in c.THRESHOLDS:
+        time='am0'
+
+       
         ds=xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
         date=c.MONTH
+        time='am'
+
         ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
         ds['humidity_overlap']=scale_g*ds['humidity_overlap']
+        time='am0'
+
         ds=preprocess(ds,thresh)
         data=ds['u'].values
         print(np.count_nonzero(~np.isnan(data)))
@@ -243,8 +250,8 @@ def main():
         #breakpoint()
 
         cross_sequence(ds, thresh, time)
-        four_panel_quiver_map(ds, month_string+'_quiver_am_p1'+str(thresh),str( thresh),[850,700])    
-        four_panel_quiver_map(ds, month_string+'_quiver_am_p2'+str(thresh),str( thresh),[500,400])    
+        four_panel_quiver_map(ds, month_string+'_quiver'+time+'_p1'+str(thresh),str( thresh),[850,700])    
+        four_panel_quiver_map(ds, month_string+'_quiver_'+time+'_p2'+str(thresh),str( thresh),[500,400])    
         
 
    

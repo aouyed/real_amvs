@@ -66,40 +66,6 @@ def pressure_plot(df,rmsvd_label, title):
     plt.show()
     plt.close()
            
-    
-def pressure_ax(ax, df,rmsvd_label):
-    df_pressure_era= pressure_df(df)
-    for thresh in THRESHOLDS:
-        df_unit=df[df.error_mag<thresh]
-        print(df_unit.shape)
-        df_pressure= pressure_df(df_unit)
-        ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
-    ax.plot(df_pressure_era['rmsvd_era5'], df_pressure_era.plev, label='ERA 5')
-    ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
-    ax.legend(frameon=False, loc='upper left')
-    ax.set_xlabel('RMSVD [m/s]')
-    ax.set_ylabel('Pressure [hPa]')
-    ax.set_xlim(2,10)
-    ax.set_yscale('symlog')
-    ax.set_yticklabels(np.arange(900, 50, -100))
-    ax.set_ylim(df['plev'].max(), df['plev'].min())
-    ax.set_yticks(np.arange(900, 50, -100))
-    return ax
-    
-    
-def multiple_pressure_plots(df_jan, df_july, fname):
-    fig, axes = plt.subplots(nrows=1, ncols=2)
-    axlist = axes.flat
-    axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
-    axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
-    axlist[0].text(3.5,95,'(a)')
-    axlist[1].text(3.5,95,'(b)')
-
-    fig.tight_layout()
-    plt.savefig('../data/processed/plots/'+fname +
-                '.png', bbox_inches='tight', dpi=300)
-    plt.show()
-    plt.close()
        
 def preprocess(df):
     df=df[df.u_wind>-1000]
@@ -112,17 +78,16 @@ def preprocess(df):
 
 
 def main():
-    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model.pkl')
-    df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model.pkl')
+    df=pd.read_pickle('../data/processed/dataframes/' + c.month_string + '_winds_rs_model.pkl')
+    df=preprocess(df)
+    df=df.drop_duplicates()
+    #delta=timedelta(hours=1.5)
 
-    df_jan=preprocess(df_jan)
-    df_jan=df_jan.drop_duplicates()
-    
-    df_july=preprocess(df_july)
-    df_july=df_july.drop_duplicates()
+    #df=df[df.deltat<delta]    
+    print(df.shape)
     
 
-    multiple_pressure_plots(df_jan,df_july,  'rmsvd')
+    pressure_plot(df, 'rmsvd','Difference between 3D AMVs and radiosondes')
     
     
     
