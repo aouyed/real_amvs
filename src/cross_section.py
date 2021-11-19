@@ -232,16 +232,16 @@ def main():
     time='am'
     dsdate=c.MONTH.strftime('%m_%d_%Y')
     for thresh in c.THRESHOLDS:
-        time='am0'
+        #time='am0'
 
        
         ds=xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
         date=c.MONTH
-        time='am'
+        #time='am'
 
         ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
         ds['humidity_overlap']=scale_g*ds['humidity_overlap']
-        time='am0'
+        #time='am0'
 
         ds=preprocess(ds,thresh)
         data=ds['u'].values

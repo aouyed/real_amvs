@@ -53,6 +53,7 @@ def calc(frame0, frame):
 
 
     flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
+    #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 1, 1.2, 0)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
      
