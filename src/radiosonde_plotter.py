@@ -10,6 +10,8 @@ from datetime import timedelta
 import matplotlib.pyplot as plt
 import numpy as np
 import config as c
+import cartopy.crs as ccrs
+
 
 
 THRESHOLDS=[10,4]
@@ -81,19 +83,63 @@ def pressure_ax(ax, df,rmsvd_label):
     ax.set_ylabel('Pressure [hPa]')
     ax.set_xlim(2,10)
     ax.set_yscale('symlog')
-    ax.set_yticklabels(np.arange(900, 50, -100))
+    ax.set_yticklabels(np.arange(900, 50, -125))
     ax.set_ylim(df['plev'].max(), df['plev'].min())
-    ax.set_yticks(np.arange(900, 50, -100))
+    ax.set_yticks(np.arange(900, 50, -125))
     return ax
     
     
 def multiple_pressure_plots(df_jan, df_july, fname):
-    fig, axes = plt.subplots(nrows=1, ncols=2)
+    fig, axes = plt.subplots(nrows=1, ncols=2,gridspec_kw={'width_ratios': [1, 1,2]})
     axlist = axes.flat
     axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
     axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
     axlist[0].text(3.5,95,'(a)')
     axlist[1].text(3.5,95,'(b)')
+
+    fig.tight_layout()
+    plt.savefig('../data/processed/plots/'+fname +
+                '.png', bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()
+    
+def scatter_plot_cartopy(ax, title, x, y):
+    #ax.gridlines(draw_labels=False, x_inline=False, y_inline=False)
+
+    ax.coastlines()
+    ax.scatter(x,y,s=20)
+    return ax
+
+
+
+def location_loader():
+    df1=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model.pkl')
+    df2=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model.pkl')
+    df1.reset_index(drop=True)
+    df2.reset_index(drop=True)
+    df=df1.append(df2).reset_index(drop=True)
+    df=preprocess(df)
+    df=df.loc[df.error_mag<10]
+    df=df[['lat_rs','lon_rs','stationid']].drop_duplicates(ignore_index=True)
+    return(df)
+
+    
+def multiple_pressure_map(df_jan, df_july, fname):
+    fig=plt.figure()
+    ax1= plt.subplot(2,2,1)
+    ax2= plt.subplot(2,2,2)
+    ax3=plt.subplot(2,1,2,projection=ccrs.PlateCarree())
+
+    axlist = [ax1,ax2,ax3]
+    axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
+    axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
+    df=location_loader()
+    axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
+
+    axlist[0].text(3.5,95,'(a)')
+    axlist[1].text(3.5,95,'(b)')
+    axlist[2].text(-230,0,'(c)')
+
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+fname +
@@ -121,8 +167,7 @@ def main():
     df_july=preprocess(df_july)
     df_july=df_july.drop_duplicates()
     
-
-    multiple_pressure_plots(df_jan,df_july,  'rmsvd')
+    multiple_pressure_map(df_jan,df_july,  'rmsvd_map')
     
     
     

@@ -102,10 +102,44 @@ def line_plotter(label,month_string, tag):
     plt.close()
     
     
+def line_ax(ax,label, month_string, tag):
+    colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
+    for i, thresh in enumerate(THRESHOLDS):
+        df=pd.read_csv('../data/processed/dataframes/'+month_string+'_t'+str(thresh)+'_shear.csv')
+        ax.plot(df['edges'], df[label], '-o', label='δ = '+str(thresh)+' m/s', color=colors[i])
+    df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_t100_shear.csv')
+    ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='ERA 5', color ='red')
+    ax.set_ylim(5,20)
+    ax.text(0.05,0.9,tag, transform=ax.transAxes)
+    return ax, df['edges']
+   
+    
+ 
+ 
+def multiple_lineplots(title):
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+    axlist = axes.flat
+    axlist[0],_=line_ax(axlist[0],'shear','january', '(a)')
+    axlist[1],labels=line_ax(axlist[1],'shear','july', '(a)')
+    axlist[1].legend(frameon=None, loc='upper right')
+    axlist[1].set_xlabel("Region")
+    axlist[0].set_ylabel('Shear [m/s]')
+    plt.xticks(rotation=45, ha="right")
+    axlist[1].set_xticklabels(labels, rotation=45, ha='right')
+    fig.tight_layout()
+ 
+    plt.savefig('../data/processed/plots/'+title +
+                '.png', bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()
+    
+    
+    
 def main():
+    multiple_lineplots('shear_double')
     #thresh_loop()
-     line_plotter('shear','january', '(a)')
-     line_plotter('shear','july', '(b)')
+     #line_plotter('shear','january', '(a)')
+     #line_plotter('shear','july', '(b)')
 
 
    
