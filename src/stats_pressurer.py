@@ -142,8 +142,8 @@ def threshold_fun():
     
 def main():
     #threshold_fun()
-    multiple_lineplots('(a)','july','july_pressure_plots', plot_rmsvd,plot_yield)
-    multiple_lineplots('(b)','january','january_pressure_plots', plot_rmsvd,plot_yield)
+    multiple_lineplots('(a)','january','january_pressure_plots', plot_rmsvd,plot_yield)
+    multiple_lineplots('(b)','july','july_pressure_plots', plot_rmsvd,plot_yield)
 
 
 

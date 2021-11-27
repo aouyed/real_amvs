@@ -52,6 +52,19 @@ def weighted_mean(da):
     w_mean=da_weighted.mean(('longitude','latitude'), skipna=True)
     return w_mean.item()
 
+
+def weighted_mean_cross(da):
+    '''Calculates regional cosine weighted means from dataset'''
+    
+    weights = np.cos(np.deg2rad(da.latitude))
+    weights.name='weights'
+    
+
+    da_weighted=da.weighted(weights)
+    w_mean=da_weighted.mean(skipna=True)
+    return w_mean.item()
+
+
 def weighted_sum(da):
     '''Calculates regional cosine weighted means from dataset'''
     

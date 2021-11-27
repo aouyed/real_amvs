@@ -120,7 +120,7 @@ def multiple_lineplots(title):
     fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
     axlist = axes.flat
     axlist[0],_=line_ax(axlist[0],'shear','january', '(a)')
-    axlist[1],labels=line_ax(axlist[1],'shear','july', '(a)')
+    axlist[1],labels=line_ax(axlist[1],'shear','july', '(b)')
     axlist[1].legend(frameon=None, loc='upper right')
     axlist[1].set_xlabel("Region")
     axlist[0].set_ylabel('Shear [m/s]')

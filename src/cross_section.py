@@ -17,6 +17,7 @@ import quiver
 import cartopy.crs as ccrs
 from datetime import datetime 
 import stats_pressurer as sp
+import stats_calculators as sc
 import config as c
 
 
@@ -115,12 +116,18 @@ def multiple_quiver(ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
     axlist[0].set_ylabel('Pressure [hPa]')
-    axlist[0].text(5,400,'3D AMVs')
+    axlist[0].text(-53,200,'(a)')    
+  
+               
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
-    axlist[1].text(5,400,'ERA 5')
+    axlist[1].text(-53,200,'(b)')
 
     ax_inset=inset_plot(geodesic, fig)
     axlist[0].text(0.8,1.1,'δ = ' + thresh + ' m/s', transform=axlist[0].transAxes)
+    rmsvd=np.sqrt(sc.weighted_mean_cross(ds['squared_error']))
+    axlist[0].text(0.4,1.1, 'RMSVD = '  + str(round(rmsvd, 2))+ ' m/s',
+                   transform=axlist[0].transAxes)
+                
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
@@ -135,7 +142,8 @@ def multiple_quiver_map(ds, title,letter,thresh,  tag=''):
     
     for index, pressure in enumerate(PRESSURES):
         print(axlist[index])
-        quiver.quiver_ax_cartopy( axlist[index],ds.sel(plev=pressure, method='nearest'), str(pressure)+' hPa', 'u'+tag, 'v'+tag)
+        ds_unit=ds.sel(plev=pressure, method='nearest')
+        quiver.quiver_ax_cartopy( axlist[index],ds_unit, str(pressure)+' hPa', 'u'+tag, 'v'+tag)
    
     axlist[0].text(-180, 100, letter)
     axlist[1].text(80, 100, 'δ = ' + thresh + ' m/s')
@@ -146,26 +154,7 @@ def multiple_quiver_map(ds, title,letter,thresh,  tag=''):
     plt.show()
     plt.close()
     
-def eight_panel_quiver_map(ds, title, thresh):
-    fig, axes = plt.subplots(nrows=4, ncols=2, subplot_kw={
-                             'projection': ccrs.PlateCarree()})
-    axlist = axes.flat
-    
-    for j, tag in enumerate(('','_era5')):
-        for index, pressure in enumerate(PRESSURES):
-            if tag == '':
-                title_tag=str(pressure)+' hPa'
-            else: 
-                title_tag='ERA 5'
-            quiver.quiver_ax_cartopy( axes[index,j],ds.sel(plev=pressure, method='nearest'), title_tag, 'u'+tag, 'v'+tag)
-   
-    plt.tight_layout()
-    plt.subplots_adjust(wspace=-0.7)
-    print('saving ' + title)
-    plt.savefig('../data/processed/plots/'+title +
-                '.png', bbox_inches='tight', dpi=500)
-    plt.show()
-    plt.close()
+
     
 def four_panel_quiver_map(ds, title, thresh, pressures):
     fig, axes = plt.subplots(nrows=2, ncols=2, subplot_kw={
@@ -178,8 +167,14 @@ def four_panel_quiver_map(ds, title, thresh, pressures):
                 title_tag=str(pressure)+' hPa'
             else: 
                 title_tag='ERA 5'
-            quiver.quiver_ax_cartopy( axes[index,j],ds.sel(plev=pressure, method='nearest'), title_tag, 'u'+tag, 'v'+tag)
-   
+            ds_unit=ds.sel(plev=pressure, method='nearest')
+            quiver.quiver_ax_cartopy( axes[index,j],ds_unit, title_tag, 'u'+tag, 'v'+tag)
+            if(tag == ''):
+                rmsvd=np.sqrt(sc.weighted_mean(ds_unit['squared_error']))
+                print(rmsvd)
+                axes[index,j].text(0.5,0.05, 'RMSVD = '  + str(round(rmsvd, 2))+ ' m/s',
+                                  fontsize=7,c='red', transform=axes[index,j].transAxes)
+                
     plt.tight_layout()
     print('saving ' + title)
     plt.savefig('../data/processed/plots/'+title +
