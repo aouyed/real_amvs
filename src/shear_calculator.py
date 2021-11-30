@@ -111,7 +111,39 @@ def line_ax(ax,label, month_string, tag):
     ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='ERA 5', color ='red')
     ax.set_ylim(5,20)
     ax.text(0.05,0.9,tag, transform=ax.transAxes)
+    temp = ax.xaxis.get_ticklabels()
+    for i,label in enumerate(temp):
+        if(i%2==0):
+            label.set_visible(False)
     return ax, df['edges']
+
+def  sample_calc():
+    shear_total=pd.DataFrame()
+    for month_string in ('january','july'):
+        shear_sample=pd.DataFrame()
+        for i, thresh in enumerate(THRESHOLDS):
+            df=pd.read_csv('../data/processed/dataframes/'+month_string+'_t'+str(thresh)+'_shear.csv')
+            sample_unit=df[df.edges=='30°S,20°S'].copy()
+            sample_unit['thresh']=thresh
+            sample_unit['month']=month_string
+            if shear_sample.empty:
+                shear_sample=sample_unit
+            else:
+                shear_sample=shear_sample.append(sample_unit)
+             
+            
+        df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_t100_shear.csv')
+        sample_unit=df[df.edges=='30°S,20°S'].copy()
+        shear_sample['shear_era5']=sample_unit['shear_era5'].values.item()    
+        if shear_total.empty:
+            shear_total=shear_sample
+        else:
+            shear_total=shear_total.append(shear_sample)
+    
+    shear_total['diff']=shear_total['shear']-shear_total['shear_era5']
+    shear_total.to_csv('../data/processed/dataframes/shear_samples.csv')
+    
+    print(shear_total)
    
     
  
@@ -136,6 +168,7 @@ def multiple_lineplots(title):
     
     
 def main():
+    sample_calc()
     multiple_lineplots('shear_double')
     #thresh_loop()
      #line_plotter('shear','january', '(a)')

@@ -168,14 +168,22 @@ def four_panel_quiver_map(ds, title, thresh, pressures):
             else: 
                 title_tag='ERA 5'
             ds_unit=ds.sel(plev=pressure, method='nearest')
-            quiver.quiver_ax_cartopy( axes[index,j],ds_unit, title_tag, 'u'+tag, 'v'+tag)
+            axes[index,j], gl= quiver.quiver_ax_cartopy( axes[index,j],ds_unit, title_tag, 'u'+tag, 'v'+tag)
             if(tag == ''):
                 rmsvd=np.sqrt(sc.weighted_mean(ds_unit['squared_error']))
                 print(rmsvd)
                 axes[index,j].text(0.5,0.05, 'RMSVD = '  + str(round(rmsvd, 2))+ ' m/s',
                                   fontsize=7,c='red', transform=axes[index,j].transAxes)
+                gl.xlabels_top = False
+                gl.ylabels_right=False
+            elif (tag=='_era5'):
+                 gl.xlabels_top = False
+                 gl.ylabels_left= False
+                
                 
     plt.tight_layout()
+    fig.subplots_adjust(hspace=0.15)
+
     print('saving ' + title)
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=500)
@@ -245,7 +253,7 @@ def main():
         #breakpoint()
 
         cross_sequence(ds, thresh, time)
-        four_panel_quiver_map(ds, month_string+'_quiver'+time+'_p1'+str(thresh),str( thresh),[850,700])    
+        four_panel_quiver_map(ds, month_string+'_quiver_'+time+'_p1'+str(thresh),str( thresh),[850,700])    
         four_panel_quiver_map(ds, month_string+'_quiver_'+time+'_p2'+str(thresh),str( thresh),[500,400])    
         
 

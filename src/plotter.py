@@ -96,10 +96,13 @@ def main():
     time='am'
     ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')
     ds_map=ds.loc[{'time':time,'satellite':'j1'}]
-    ds_map=ds_map.sel(plev=706, method='nearest')
-    corr(ds_map, 10)
-    
-    map_plotter_cartopy(ds_map, 'humidity_overlap_map_j1', 'humidity_overlap','[g/kg]')
+    ds_map=ds_map.sel(plev=190, method='nearest')
+    #corr(ds_map, 10)
+    start=ds_map['obs_time'].min(skipna=True).values
+    end=start + np.timedelta64(285, 'm')
+    ds_map=ds_map.where((ds_map.obs_time >= start) & (ds_map.obs_time <= end))
+
+    map_plotter_cartopy(ds_map, 'humidity_overlap_map_test_'+time, 'humidity_overlap','[g/kg]')
     
 
     print(ds_map)

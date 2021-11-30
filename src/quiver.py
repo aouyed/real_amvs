@@ -12,6 +12,8 @@ import pandas as pd
 import first_stage_amv as fsa
 from datetime import datetime 
 import cartopy.crs as ccrs
+import matplotlib.ticker as mticker
+
 
 
 def quiver_plot(ds, title, u, v):
@@ -53,9 +55,12 @@ def quiver_ax_cartopy(ax,ds, title, u, v):
         ds[u].values), np.squeeze(ds[v].values),scale=250)
     qk=ax.quiverkey(Q, 0.5, 0.5, 5, r'5 m/s', labelpos='E',
                       coordinates='figure')
-    ax.set_title(title, fontsize=10)
+    ax.set_title(title, fontsize=8)
     ax.coastlines()
-    return ax
+    gl=ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
+    gl.xlocator = mticker.FixedLocator([-120, -60, 0, 60, 120])
+
+    return ax,gl
     
     
 

@@ -94,12 +94,15 @@ def  plot_rmsvd(ax, df, width, thresh):
 
 
 def  plot_yield(ax, df, width, thresh):
-     ax.plot( df['yield']/7,df['pressure'],  label='δ = '+str(thresh)+' m/s', linewidth=width)
-     ax.set_xlabel('Counts per day')
+     ax.plot( df['yield']/(7*1000),df['pressure'],  label='δ = '+str(thresh)+' m/s', linewidth=width)
+     ax.set_xlabel('1000 counts per day')
      ax.set_yscale('symlog')
      ax.set_yticklabels(np.arange(1000, 50, -150))
      ax.set_ylim(df['pressure'].max(), df['pressure'].min())
      ax.set_yticks(np.arange(1000, 50, -150))
+     nticks=np.arange(0, 30, 5)
+     ax.set_xticklabels(nticks)
+     ax.set_xticks(nticks)
 
 
     

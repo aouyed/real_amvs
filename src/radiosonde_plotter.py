@@ -68,14 +68,31 @@ def pressure_plot(df,rmsvd_label, title):
     plt.show()
     plt.close()
            
+def sample_stat_calc(df_pressure, df_pressure_era, thresh):
+    sample_unit=df_pressure[df_pressure.plev.between(852.5,853)]
+    sample_era5=df_pressure_era[df_pressure_era.plev.between(852.5,853)]
+    sample_unit['rmsvd_era5']=  sample_era5['rmsvd_era5'].values.item()
+    
+    sample_unit2=df_pressure[df_pressure.plev.between(300,301)]
+    sample_era5=df_pressure_era[df_pressure_era.plev.between(300,300.1)]
+    sample_unit2['rmsvd_era5']=  sample_era5['rmsvd_era5'].values.item()
+        
+    sample_unit=sample_unit.append(sample_unit2)
+    sample_unit['thresh']=thresh
+    return sample_unit
     
 def pressure_ax(ax, df,rmsvd_label):
+    sample_stats=pd.DataFrame()
     df_pressure_era= pressure_df(df)
     for thresh in THRESHOLDS:
         df_unit=df[df.error_mag<thresh]
-        print(df_unit.shape)
         df_pressure= pressure_df(df_unit)
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
+        sample_unit=sample_stat_calc(df_pressure,  df_pressure_era, thresh)
+        if sample_stats.empty:
+            sample_stats=sample_unit
+        else:
+            sample_stats=sample_stats.append(sample_unit)
     ax.plot(df_pressure_era['rmsvd_era5'], df_pressure_era.plev, label='ERA 5')
     ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
     ax.legend(frameon=False, loc='upper left')
@@ -86,26 +103,13 @@ def pressure_ax(ax, df,rmsvd_label):
     ax.set_yticklabels(np.arange(900, 50, -125))
     ax.set_ylim(df['plev'].max(), df['plev'].min())
     ax.set_yticks(np.arange(900, 50, -125))
-    return ax
+    return ax, sample_stats
     
-    
-def multiple_pressure_plots(df_jan, df_july, fname):
-    fig, axes = plt.subplots(nrows=1, ncols=2,gridspec_kw={'width_ratios': [1, 1,2]})
-    axlist = axes.flat
-    axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
-    axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
-    axlist[0].text(3.5,95,'(a)')
-    axlist[1].text(3.5,95,'(b)')
 
-    fig.tight_layout()
-    plt.savefig('../data/processed/plots/'+fname +
-                '.png', bbox_inches='tight', dpi=300)
-    plt.show()
-    plt.close()
-    
 def scatter_plot_cartopy(ax, title, x, y):
-    #ax.gridlines(draw_labels=False, x_inline=False, y_inline=False)
-
+    gl=ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
+    gl.xlabels_top = False
+    gl.ylabels_right=False
     ax.coastlines()
     ax.scatter(x,y,s=20)
     return ax
@@ -131,14 +135,14 @@ def multiple_pressure_map(df_jan, df_july, fname):
     ax3=plt.subplot(2,1,2,projection=ccrs.PlateCarree())
 
     axlist = [ax1,ax2,ax3]
-    axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
-    axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
+    axlist[0], sample_stats_jan =pressure_ax(axlist[0], df_jan, 'rmsvd')
+    axlist[1], sample_stats_july =pressure_ax(axlist[1], df_july, 'rmsvd')
     df=location_loader()
     axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
 
     axlist[0].text(3.5,95,'(a)')
     axlist[1].text(3.5,95,'(b)')
-    axlist[2].text(-230,0,'(c)')
+    axlist[2].text(-280,0,'(c)')
 
 
     fig.tight_layout()
@@ -146,6 +150,13 @@ def multiple_pressure_map(df_jan, df_july, fname):
                 '.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
+    sample_stats_jan['month']='january'
+    sample_stats_july['month']='july'
+    sample_stats=sample_stats_jan.append(sample_stats_july)
+    sample_stats['rmsvd_diff']=sample_stats['rmsvd']-sample_stats['rmsvd_era5']
+    print(sample_stats)
+    sample_stats.to_csv('../data/processed/dataframes/sample_rao_stats.csv')
+    
        
 def preprocess(df):
     df=df[df.u_wind>-1000]
