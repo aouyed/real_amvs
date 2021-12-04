@@ -108,24 +108,30 @@ def inset_plot(geodesic, fig):
     
     
     
-def multiple_quiver(ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m/s'):
+def multiple_quiver(letters, ds, title, geodesic, xlabel,thresh,  tag='',qkey=5, units='m/s', inset=True):
     
     
     fig, axes = plt.subplots(nrows=2, ncols=1)
+    if inset:
+        ax_inset=inset_plot(geodesic, fig)
+        letter='(a)'
+    else:
+        letter='(b)'
+        
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
     axlist[0].set_ylabel('Pressure [hPa]')
-    axlist[0].text(-53,200,'(a)')    
+    axlist[0].text(-53,150,letters[0])    
   
                
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
-    axlist[1].text(-53,200,'(b)')
-
-    ax_inset=inset_plot(geodesic, fig)
+    axlist[1].text(-53,150,letters[1])
     axlist[0].text(0.8,1.1,'δ = ' + thresh + ' m/s', transform=axlist[0].transAxes)
     rmsvd=np.sqrt(sc.weighted_mean_cross(ds['squared_error']))
     axlist[0].text(0.4,1.1, 'RMSVD = '  + str(round(rmsvd, 2))+ ' m/s',
+                   transform=axlist[0].transAxes)
+    axlist[0].text(-0.2,1.1, letter,
                    transform=axlist[0].transAxes)
                 
     fig.tight_layout()
@@ -226,13 +232,14 @@ def cross_sequence(ds, thresh, time):
         xlabel=geodesic[2]
         cross = cross_section(data, start, end, interp_type='nearest').set_coords(('latitude', 'longitude'))
         cross=cross.reindex(plev=list(reversed(cross.plev)))
-        multiple_quiver(cross, month_string+'_quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
-       
+        multiple_quiver(['(a)','(b)'],cross, month_string+'_quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
+        multiple_quiver(['(c)','(d)'],cross, month_string+'_quiver_'+time+ '_'+geokey+tag+'_noinset', geodesic, xlabel, str(thresh), qkey=5,inset=False)
+
 
     
 
 def main():
-    time='am'
+    time='pm'
     dsdate=c.MONTH.strftime('%m_%d_%Y')
     for thresh in c.THRESHOLDS:
         #time='am0'

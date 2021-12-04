@@ -104,18 +104,19 @@ def line_plotter(label,month_string, tag):
     
 def line_ax(ax,label, month_string, tag):
     colors = cm.tab10(np.linspace(0, 1, len(THRESHOLDS)))
+    lats=np.arange(-65,70,10)
+    lats=pd.Series(lats)
     for i, thresh in enumerate(THRESHOLDS):
         df=pd.read_csv('../data/processed/dataframes/'+month_string+'_t'+str(thresh)+'_shear.csv')
+        df['edges']=lats
         ax.plot(df['edges'], df[label], '-o', label='δ = '+str(thresh)+' m/s', color=colors[i])
     df=pd.read_csv('../data/processed/dataframes/'+c.month_string+'_t100_shear.csv')
+    df['edges']=lats
     ax.plot(df['edges'], df[label+'_era5'], '-o', linestyle='dashed', label='ERA 5', color ='red')
     ax.set_ylim(5,20)
     ax.text(0.05,0.9,tag, transform=ax.transAxes)
-    temp = ax.xaxis.get_ticklabels()
-    for i,label in enumerate(temp):
-        if(i%2==0):
-            label.set_visible(False)
     return ax, df['edges']
+    
 
 def  sample_calc():
     shear_total=pd.DataFrame()
@@ -154,10 +155,10 @@ def multiple_lineplots(title):
     axlist[0],_=line_ax(axlist[0],'shear','january', '(a)')
     axlist[1],labels=line_ax(axlist[1],'shear','july', '(b)')
     axlist[1].legend(frameon=None, loc='upper right')
-    axlist[1].set_xlabel("Region")
+    axlist[1].set_xlabel("Latitude")
     axlist[0].set_ylabel('Shear [m/s]')
-    plt.xticks(rotation=45, ha="right")
-    axlist[1].set_xticklabels(labels, rotation=45, ha='right')
+    #plt.xticks(rotation=45, ha="right")
+    axlist[1].set_xticks(np.arange(-70,80,10))
     fig.tight_layout()
  
     plt.savefig('../data/processed/plots/'+title +

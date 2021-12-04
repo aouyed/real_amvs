@@ -126,7 +126,11 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield):
     axlist = axes.flat
     axlist[0]=line_plotter(plot_rmsvd, axlist[0], month)
     axlist[1]=line_plotter(plot_yield, axlist[1], month)
-    axlist[0].text(-15,95,tag)
+    #axlist[0].text(-5,150,tag[0],c='red')
+    #axlist[1].text(-5,150,tag[1],c='red')
+    axlist[0].text(0.5,0.5,tag[0], transform=axlist[0].transAxes)
+    axlist[1].text(0.5,0.5,tag[1], transform=axlist[1].transAxes)
+
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
                 '.png', bbox_inches='tight', dpi=300)
@@ -145,8 +149,8 @@ def threshold_fun():
     
 def main():
     #threshold_fun()
-    multiple_lineplots('(a)','january','january_pressure_plots', plot_rmsvd,plot_yield)
-    multiple_lineplots('(b)','july','july_pressure_plots', plot_rmsvd,plot_yield)
+    multiple_lineplots(['(a)','(b)'],'january','january_pressure_plots', plot_rmsvd,plot_yield)
+    multiple_lineplots(['(c)','(d)'],'july','july_pressure_plots', plot_rmsvd,plot_yield)
 
 
 

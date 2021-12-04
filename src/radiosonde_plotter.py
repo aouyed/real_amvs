@@ -140,9 +140,9 @@ def multiple_pressure_map(df_jan, df_july, fname):
     df=location_loader()
     axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
 
-    axlist[0].text(3.5,95,'(a)')
-    axlist[1].text(3.5,95,'(b)')
-    axlist[2].text(-280,0,'(c)')
+    axlist[0].text(2.5,775,'(a)')
+    axlist[1].text(2.5,775,'(b)')
+    axlist[2].text(-170,-60,'(c)')
 
 
     fig.tight_layout()
