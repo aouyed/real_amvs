@@ -15,6 +15,7 @@ import era5_downloader as ed
 from datetime import datetime 
 import config as c
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -64,7 +65,19 @@ def prepare_patch(ds_snpp, ds_j1, start, end):
     
     
     return ds_merged, ds_snpp, ds_j1, df_snpp
-    
+
+
+def map_plotter(ds, label, units_label='',color='viridis'):
+    values=np.squeeze(ds[label].values)
+    fig, ax = plt.subplots()
+    im = ax.imshow(values, cmap=color, extent=[ds['longitude'].min(
+        ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
+    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
+    cbar.set_label(units_label)
+    plt.xlabel("lon")
+    plt.ylabel("lat")
+    plt.show()
+    plt.close()       
     
 def ds_unit_calc(ds, day,pressure, time):
     ds=ds.loc[{'day':day ,'plev':pressure,'time':time}]
@@ -73,19 +86,24 @@ def ds_unit_calc(ds, day,pressure, time):
     df=ds.to_dataframe()
     swathes=calc.swath_initializer(ds,5,swath_hours)
     for swath in swathes:
+        print(swath)
         ds_snpp=ds.loc[{'satellite':'snpp'}]
         ds_j1=ds.loc[{'satellite':'j1'}]
         start=swath[0]
         end=swath[1]
         ds_merged, ds_snpp, ds_j1, df_snpp=prepare_patch(ds_snpp, ds_j1,  start, end)
-        df_j1=ds_j1.to_dataframe().reset_index
-        df_snpp=ds_snpp.to_dataframe()
+        df_j1=ds_j1.to_dataframe().reset_index().dropna().set_index(['latitude','longitude','satellite'])
+        df_snpp=ds_snpp.to_dataframe().reset_index().dropna().set_index(['latitude','longitude','satellite'])
+        print(df_snpp.shape[0])
         if (df_snpp.shape[0]>100):
             df_snpp=df_snpp.reorder_levels(['latitude','longitude','satellite']).sort_index()
             df_j1=df_j1.reorder_levels(['latitude','longitude','satellite']).sort_index()
             df=df_filler(df, df_snpp)
             df=df_filler(df, df_j1)        
-             
+            ds_unit=xr.Dataset.from_dataframe(df)
+            ds_unit=ds_unit.sel(satellite='j1')
+            ds_unit=ds_unit.squeeze()
+            map_plotter(ds_unit, 'humidity_overlap')
     ds=xr.Dataset.from_dataframe(df)
    
     return ds   
@@ -93,7 +111,7 @@ def ds_unit_calc(ds, day,pressure, time):
 def df_filler(df, df_sat):
     swathi=df_sat.index.values 
     df['humidity_overlap'].loc[df.index.isin(swathi)]=df_sat['specific_humidity_mean']
-     
+    return df
 
 
 def serial_loop(ds):
