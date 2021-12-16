@@ -29,7 +29,7 @@ def map_plotter_cartopy(ds, title, label, units_label=''):
     im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
     ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
-
+    ax.text(-170,-60,'(a)')
     #plt.title(label)
     cbar_ax = fig.add_axes([0.1, 0.05, 0.78, 0.05])
     fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
@@ -73,9 +73,9 @@ def overlap(ds):
    
     ds_snpp=ds.loc[{'satellite':'snpp'}]
     ds_j1=ds.loc[{'satellite':'j1'}]
-    start=ds['obs_time'].min(skipna=True).values+ np.timedelta64(68, 'm')
-    end=start + np.timedelta64(5, 'm')
-    
+    start=ds['obs_time'].min(skipna=True)
+    end=start + np.timedelta64(145, 'm')
+    #145
     ds_j1=ds_j1.where((ds_j1.obs_time >= start) & (ds_j1.obs_time <= end))
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
@@ -85,11 +85,6 @@ def overlap(ds):
     condition2=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_snpp['obs_time']))
     ds_j1=ds_j1[['specific_humidity_mean','obs_time']].where(condition1 & condition2)
     ds_snpp=ds_snpp[['specific_humidity_mean','obs_time']].where(condition1 & condition2)
-    df_j1=ds_j1.to_dataframe().dropna().set_index('satellite',append=True)
-    df_snpp=ds_snpp.to_dataframe().dropna().set_index('satellite',append=True)
-    print(df_snpp.shape)  
-    ds_j1=xr.Dataset.from_dataframe(df_j1)
-    ds_snpp=xr.Dataset.from_dataframe(df_snpp)
     return ds_snpp, ds_j1
 
 def corr(ds, thresh):
@@ -126,7 +121,7 @@ def single_overlap():
     ds_map=ds_map.sel(plev=706, method='nearest')
     #corr(ds_map, 10)
     start=ds_map['obs_time'].min(skipna=True).values+ np.timedelta64(95, 'm')
-    end=start + np.timedelta64(5, 'm')
+    end=start + np.timedelta64(10, 'm')
     ds_map=ds_map.where((ds_map.obs_time >= start) & (ds_map.obs_time <= end))
     df=ds_map.to_dataframe()
     df=df.reset_index().dropna()
@@ -150,12 +145,13 @@ def patch_tester():
     ds_map=ds_map.sel(plev=706, method='nearest')
     ds_snpp, ds_j1=overlap(ds_map)
     map_plotter(ds_snpp, 'snpp', 'specific_humidity_mean')
-      
+    single_overlap()
         
 
 def main():
   patch_tester()
-  patch_plotter()
+  #atch_plotter()
+  #swaths=calc.swath_initializer()
 
 
     
