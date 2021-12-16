@@ -88,7 +88,6 @@ def ds_unit_calc(ds, day,pressure, time):
             df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df)
                      
     ds=xr.Dataset.from_dataframe(df)
-    ds_model.close()
    
     return ds   
 

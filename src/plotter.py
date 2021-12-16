@@ -121,7 +121,7 @@ def single_overlap():
     ds_map=ds_map.sel(plev=706, method='nearest')
     #corr(ds_map, 10)
     start=ds_map['obs_time'].min(skipna=True).values+ np.timedelta64(95, 'm')
-    end=start + np.timedelta64(10, 'm')
+    end=start + np.timedelta64(5, 'm')
     ds_map=ds_map.where((ds_map.obs_time >= start) & (ds_map.obs_time <= end))
     df=ds_map.to_dataframe()
     df=df.reset_index().dropna()
