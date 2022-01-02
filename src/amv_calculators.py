@@ -97,7 +97,7 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
     ds_snpp=ds_snpp.where((ds_snpp.obs_time >= start) & (ds_snpp.obs_time <= end))
-    
+
     
     
     condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))

@@ -58,7 +58,7 @@ def model_loader(date, pressure):
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    ds_model=  xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+    ds_model=  xr.open_dataset('/Volumes/reserarchDi/12_17_21/real_amvs/data/interim/model_'+month+'_'+day+'_'+year+'.nc')
     ds_model=ds_model.sel(level=pressure, method='nearest')
     ds_model=ds_model.drop('level')
     ds_model['vort_era5_smooth']=  ds_model['vo'].rolling(
@@ -95,12 +95,12 @@ def ds_unit_calc(ds, day,pressure, time):
 
 
 def serial_loop(ds):
-    for day in ds['day'].values:
+    for day in [ds['day'].values[0]]:
         print(day)
-        ed.downloader(day)
+        #ed.downloader(day)
         for time in ds['time'].values: 
             ds_total=xr.Dataset()
-            for pressure in tqdm(ds['plev'].values):
+            for pressure in tqdm([ds['plev'].values[41]]):
                 ds_unit = ds_unit_calc(ds, day,pressure, time)
                 ds_unit = ds_unit.expand_dims('day').assign_coords(day=np.array([day]))
                 ds_unit = ds_unit.expand_dims('time').assign_coords(time=np.array([time]))
@@ -112,7 +112,7 @@ def serial_loop(ds):
                     ds_total=xr.concat([ds_total,ds_unit],'plev')
                 
             ds_closer(day,ds_total,time)
-        model_closer(day)
+        #model_closer(day)
 
 
         

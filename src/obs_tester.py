@@ -21,7 +21,7 @@ import amv_calculators as calc
 
 
 
-def map_plotter_cartopy(ds,df,  title, label, units_label=''):
+def map_plotter_cartopy(ds, title, label, units_label=''):
     values=np.squeeze(ds[label].values)
     fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -30,7 +30,7 @@ def map_plotter_cartopy(ds,df,  title, label, units_label=''):
     im = ax.imshow(values, cmap='viridis', extent=[ds['longitude'].min(
         ), ds['longitude'].max(), ds['latitude'].min(), ds['latitude'].max()])
     ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
-    #ax.scatter(df.longitude, df.latitude)
+    ax.text(-170,-60,'(a)')
     #plt.title(label)
     cbar_ax = fig.add_axes([0.1, 0.05, 0.78, 0.05])
     fig.colorbar(im, cax=cbar_ax,orientation="horizontal", pad=0.5, label=units_label)    
@@ -106,7 +106,7 @@ def corr(ds, thresh):
 def patch_plotter():
     time='am'
     ds=xr.open_dataset('../data/processed/07_01_2020_'+time+'.nc')
-    ds_map=ds.loc[{'time':time,'satellite':'snpp'}]
+    ds_map=ds.loc[{'time':time,'satellite':'j1'}]
     ds_map=ds_map.sel(plev=706, method='nearest')
     map_plotter_cartopy(ds_map, 'humidity_overlap_map_'+time, 'humidity_overlap','[g/kg]')
     
@@ -116,31 +116,23 @@ def patch_plotter():
    
     
 def single_overlap():
-        time='pm'
-        ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc') 
-        ds_map=ds.loc[{'day':datetime(2020,7,1),'time':time,'satellite':'j1'}]
-        ds_map=ds_map.sel(plev=706, method='nearest')
+    time='am'
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_july.nc') 
+    ds_snpp=ds.loc[{'day':datetime(2020,7,1),'time':time,'satellite':'snpp'}]
+    ds_j1=ds.loc[{'day':datetime(2020,7,1),'time':time,'satellite':'j1'}]
+    ds_snpp=ds_snpp.where(ds_snpp.specific_humidity_mean!=np.nan)
+    ds_j1=ds_j1.where(ds_j1.specific_humidity_mean!=np.nan)
+    obs_time_min_j=ds_j1['obs_time'].min(skipna=True)
+    obs_time_min_s=ds_snpp['obs_time'].min(skipna=True)
+    print('obs min for snpp')
+    print(obs_time_min_s)
     
-        #corr(ds_map, 10)
-        start=np.datetime64('2020-07-01T01:00')
-        #start=ds_map['obs_time'].min(skipna=True).values+ np.timedelta64(95, 'm')
-        #end=start + np.timedelta64(10, 'm')
-        end=start + np.timedelta64(24, 'h')
+    print('obs min for j1')
+    print(obs_time_min_j)
     
-        ds_map=ds_map.where((ds_map.obs_time >= start) & (ds_map.obs_time <= end))
-        ds_unit=ds_map
-        df=ds_map.to_dataframe()
-        df=df.reset_index().dropna()
-        df=df.set_index(['latitude','longitude'])
-        print(ds_unit)
-        df=df.reset_index()
-        plt.show()
-        plt.close()
-        map_plotter_cartopy(ds_unit, df, 'humidity_overlap_map_test_'+time, 'specific_humidity_mean','[g/kg]')
-        
 
     
-        print(ds_map)
+
 
 
 def patch_tester():
