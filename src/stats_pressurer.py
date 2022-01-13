@@ -20,8 +20,6 @@ import amv_calculators as ac
 from datetime import timedelta 
 
 THRESHOLDS=c.THRESHOLDS
-
-
 def calc_days(thresh, days):
 
     
