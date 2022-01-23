@@ -47,10 +47,13 @@ def ds_closer(date,ds,time):
     ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'_'+time+'.nc')
 
 def prepare_patch(ds_snpp, ds_j1, start, end):
-    ds_snpp=ds_snpp.where((ds_snpp.obs_time >= start) & (ds_snpp.obs_time <= end))
+    #start=start-np.timedelta64(150, 's')
+
+    ds_j1=ds_j1.where((ds_j1.obs_time >= start) & (ds_j1.obs_time <= end))
     start=start+np.timedelta64(50, 'm')
     end=end+np.timedelta64(50, 'm')
-    ds_j1=ds_j1.where((ds_j1.obs_time >= start) & (ds_j1.obs_time <= end))
+    ds_snpp=ds_snpp.where((ds_snpp.obs_time >= start) & (ds_snpp.obs_time <= end))
+
     
 
     condition1=xr.ufuncs.logical_not(xr.ufuncs.isnan(ds_j1['obs_time']))
@@ -83,7 +86,7 @@ def map_plotter(ds, label, units_label='',color='viridis'):
     plt.show()
     plt.close()
     
-def map_plotter_cartopy(ds, label, units_label='',color='viridis'):
+def map_plotter_cartopy(ds, label, index,  units_label='',color='viridis'):
     values=np.squeeze(ds[label].values)
     print(np.shape(values))
     fig=plt.figure()
@@ -98,6 +101,10 @@ def map_plotter_cartopy(ds, label, units_label='',color='viridis'):
     cbar.set_label(units_label)
     plt.xlabel("lon")
     plt.ylabel("lat")
+    filename=str(index)+'.png'
+    print(filename)
+    plt.savefig('../data/processed/plots_swaths/'+filename, dpi=300)
+
     plt.show()
     plt.close()           
     
@@ -110,7 +117,7 @@ def ds_unit_calc(ds, day,pressure, time):
     df=ds.to_dataframe()
     swathes=calc.swath_initializer(ds,5,swath_hours)
     #for swath in swathes[250:]:
-    for swath in swathes:
+    for i, swath in enumerate(swathes):
         print(swath)
         ds_snpp=ds.loc[{'satellite':'snpp'}]
         ds_j1=ds.loc[{'satellite':'j1'}]
@@ -133,7 +140,7 @@ def ds_unit_calc(ds, day,pressure, time):
             ds_unit=xr.Dataset.from_dataframe(df)
             ds_unit=ds_unit.sel(satellite='snpp')
             ds_unit=ds_unit.squeeze()
-            map_plotter_cartopy(ds_unit, 'humidity_overlap')
+            map_plotter_cartopy(ds_unit, 'humidity_overlap', i)
     ds=xr.Dataset.from_dataframe(df)
    
     return ds   

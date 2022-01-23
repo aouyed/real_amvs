@@ -125,7 +125,7 @@ def single_overlap():
         start=np.datetime64('2020-07-01T01:00')
         #start=ds_map['obs_time'].min(skipna=True).values+ np.timedelta64(95, 'm')
         #end=start + np.timedelta64(10, 'm')
-        end=start + np.timedelta64(24, 'h')
+        end=start + np.timedelta64(5, 'm')
     
         ds_map=ds_map.where((ds_map.obs_time >= start) & (ds_map.obs_time <= end))
         ds_unit=ds_map
@@ -133,7 +133,7 @@ def single_overlap():
         df=df.reset_index().dropna()
         df=df.set_index(['latitude','longitude'])
         print(ds_unit)
-        df=df.reset_index()
+        ds
         plt.show()
         plt.close()
         map_plotter_cartopy(ds_unit, df, 'humidity_overlap_map_test_'+time, 'specific_humidity_mean','[g/kg]')

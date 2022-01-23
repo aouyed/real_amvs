@@ -123,8 +123,10 @@ def location_loader():
     df2.reset_index(drop=True)
     df=df1.append(df2).reset_index(drop=True)
     df=preprocess(df)
-    df=df.loc[df.error_mag<10]
+    df=df.loc[df.error_mag<4]
     df=df[['lat_rs','lon_rs','stationid']].drop_duplicates(ignore_index=True)
+    print(df.shape)
+    breakpoint()
     return(df)
 
     

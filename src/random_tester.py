@@ -53,6 +53,7 @@ def quiver_plot_cartopy(ds, title, u, v):
         ds[u].values), np.squeeze(ds[v].values))
     qk = ax.quiverkey(Q, 0.5, 0.5, 10, r'10 m/s', labelpos='E',
                       coordinates='figure')
+    ax.set_title(title)
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title+'.png',
                 bbox_inches='tight', dpi=300)
@@ -101,13 +102,13 @@ def main():
     ds=ds.sel(plev=700, method='nearest')
     ds_original=preprocess(ds.copy(),thresh)
 
-    quiver_plot_cartopy(ds_original, 'amv', 'u', 'v')
-    quiver_plot_cartopy(ds_original, 'era5', 'u_era5', 'v_era5')
+    quiver_plot_cartopy(ds_original, 'amv_thresh_'+str(thresh), 'u', 'v')
+    quiver_plot_cartopy(ds_original, 'era_thresh_ '+str(thresh), 'u_era5', 'v_era5')
     metrics(ds_original)
     
     ds_rand=random_fields(ds.copy())
     ds_rand=preprocess(ds_rand,thresh)
-    quiver_plot_cartopy(ds_rand, 'noise', 'u', 'v')
+    quiver_plot_cartopy(ds_rand, 'noise_thresh_ '+str(thresh), 'u', 'v')
     metrics(ds_rand)
     
     

@@ -114,9 +114,7 @@ def multiple_quiver(letters, ds, title, geodesic, xlabel,thresh,  tag='',qkey=5,
     fig, axes = plt.subplots(nrows=2, ncols=1)
     if inset:
         ax_inset=inset_plot(geodesic, fig)
-        letter='(a)'
-    else:
-        letter='(b)'
+     
         
     axlist = axes.flat
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
@@ -131,8 +129,7 @@ def multiple_quiver(letters, ds, title, geodesic, xlabel,thresh,  tag='',qkey=5,
     rmsvd=np.sqrt(sc.weighted_mean_cross(ds['squared_error']))
     axlist[0].text(0.4,1.1, 'RMSVD = '  + str(round(rmsvd, 2))+ ' m/s',
                    transform=axlist[0].transAxes)
-    axlist[0].text(-0.2,1.1, letter,
-                   transform=axlist[0].transAxes)
+   
                 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+title +
