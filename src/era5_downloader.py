@@ -6,7 +6,7 @@ from datetime import datetime
 from datetime import timedelta 
 import xarray as xr
 import config as c
-import first_stage_amv as fsa
+import main as fsa
 
 def downloader(date):
   

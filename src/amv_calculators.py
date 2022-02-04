@@ -11,9 +11,7 @@ import numpy as np
 import metpy.calc as mpcalc
 from metpy.units import units
 import inpainter 
-import quiver
-import first_stage_amv as fsa
-import cross_section as cs
+import main as fsa
 from datetime import timedelta
 
 
