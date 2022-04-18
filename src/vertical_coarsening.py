@@ -8,22 +8,28 @@ Created on Thu Apr 14 15:58:19 2022
 import xarray as xr
 import pandas as pd 
 import numpy as np
+import config 
+import datetime 
+from tqdm import tqdm 
 
+start=config.MONTH
+end=start + datetime.timedelta(days=6)
 
-def vertical_coarsening 
-ds=xr.open_dataset('../data/processed/01_01_2020_am.nc')
-ds=ds.sel(satellite='j1')
-ds=ds[['u','v','u_era5','v_era5']].coarsen(plev=5, boundary='trim').median()
+dates=pd.date_range(start=start, end=end, freq='d')
 
-data={'plev':[],'rmsvd':[]}
-for plev in ds['plev'].values:
-    ds_unit=ds.sel(plev=plev)
-    error_sq=(ds_unit.u-ds_unit.u_era5)**2+(ds_unit.v-ds_unit.v_era5)**2
-    rmsvd= np.sqrt(error_sq.mean().item())
-    data['plev'].append(plev)
-    data['rmsvd'].append(rmsvd)
-df=pd.DataFrame(data=data)
-print(df)
+def vertical_coarse(ds):
+    ds=ds.reindex(plev=list(reversed(ds.plev)))
+    ds_c=ds[['u','v','u_era5','v_era5','humidity_overlap']].coarsen(plev=5, boundary='trim').median()
+    ds_c['obs_time']=ds['obs_time']
+    return ds_c
+
+for date in tqdm(dates): 
+    date_string=date.strftime('%m_%d_%Y')
+    for orbit in ('am','pm'):
+        ds=xr.open_dataset('../data/processed/'+date_string+'_'+orbit+'.nc')
+        ds=vertical_coarse(ds)
+        ds.to_netcdf('../data/processed/'+date_string+'_'+orbit+'_thick_plev.nc')
+
 
 
 
