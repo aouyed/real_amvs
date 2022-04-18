@@ -1,7 +1,7 @@
 from datetime import datetime 
 
-#MONTH=datetime(2020,1,1)
-MONTH=datetime(2020,7,1)
+MONTH=datetime(2020,1,1)
+#MONTH=datetime(2021,1,28)
 month_string=MONTH.strftime("%B").lower()
 QC='noqc'
 THRESHOLDS=[4,10,100]

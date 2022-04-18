@@ -3,10 +3,33 @@ import numpy as np
 import config as c
 import datetime 
 
+dlondlat=360/14/180
+def calc_centroids():
+    cross_lons=np.arange(0,360,14)
+    cross_lons=(((cross_lons + 180) % 360) - 180)
+    swath_centroids=[]
+    for cross_lon in  cross_lons:
+        lats=np.arange(-90,90)
+        lons=cross_lon + dlondlat*lats
+        lats=lats.tolist()
+        lons=lons.tolist()
+        coords=zip(lats,lons)
+        coords=list(coords)
+        print(coords)
+        swath_centroids.append(coords)
+    return swath_centroids 
+    
+            
+            
+    
+
+
 def ds_loader(filename):
     ds_total=xr.Dataset()
 
     ds=xr.open_dataset('../data/raw/'+filename)
+    ds=ds.reindex(lat=list(reversed(ds.lat)))
+
     ds['air_pres_h2o']=ds['air_pres_h2o']/100
 
     for orbit_pass in ds['orbit_pass'].values:
@@ -22,7 +45,7 @@ def ds_loader(filename):
             start=ds_unit['obs_time_tai93']
             dt_sec=240*ds_unit['lon_coor']
             dt=dt_sec.values.astype('timedelta64[s]')
-            obs_time=start.values + dt
+            obs_time=start.values - dt
             ds_unit['obs_time']=(['lat','lon'], obs_time)
             ds_unit=ds_unit[['spec_hum','rel_hum','obs_time']]
             if not ds_orbit:
@@ -36,6 +59,9 @@ def ds_loader(filename):
     return ds_total
 
 def main():
+    swath_centroids=calc_centroids()
+    print(swath_centroids)
+    breakpoint()
     ds_j1=ds_loader('j1.nc')
     ds_snpp=ds_loader('snpp.nc')
     print(ds_j1)  
