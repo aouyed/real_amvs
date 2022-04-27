@@ -32,4 +32,6 @@ for date in tqdm(dates):
                 ds=ds.sel(plev=plev, method='nearest')
                 error=ds['u_error'].median().item()
                 ds_total['u_nobias'].loc[{'latitude':slicel}]=ds['u']-error
+        ds_total['u']=ds_total['u_nobias']
+        ds_total=ds_total.drop('u_nobias')
         ds_total.to_netcdf('../data/processed/'+date_string+'_'+orbit+'_thick_plev_nobias.nc')

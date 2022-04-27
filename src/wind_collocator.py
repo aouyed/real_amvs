@@ -111,7 +111,7 @@ def main():
     df=pd.read_pickle('../data/interim/dataframes/'+ c.month_string+'_igra_id.pkl')
     df=df.reset_index(drop=True)
     print(df)
-    collocated_winds(df,'_thick_plev')
+    collocated_winds(df,'_thick_plev_nobias')
 
 
 

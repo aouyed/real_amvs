@@ -14,7 +14,7 @@ import cartopy.crs as ccrs
 
 
 
-THRESHOLDS=[10,4]
+THRESHOLDS=[100,10]
 
 def scatter(x,y):
     fig, ax=plt.subplots()
@@ -30,15 +30,25 @@ def scatter(x,y):
 
 def pressure_df(df):
     plevs=df['plev'].unique()
-    d={'plev':[],'rmsvd':[],'rmsvd_era5':[]}
+    d={'plev':[],'rmsvd':[],'rmsvd_era5':[],'u_error':[], 'v_error':[],'u_error_era5':[]}
     for plev in plevs:
         
         df_unit=df[df.plev==plev]
         rmsvd=np.sqrt(df_unit['error_square'].mean())
+        u_error=df_unit['u_error'].mean()
+        u_error_era5=df_unit['u_error_era5'].mean()
+
+        v_error=df_unit['v_error'].mean()
+
         rmsvd_era5=np.sqrt(df_unit['error_square_era5'].mean())
         d['plev'].append(plev)
         d['rmsvd'].append(rmsvd)
         d['rmsvd_era5'].append(rmsvd_era5)
+        d['u_error'].append(u_error)
+        d['u_error_era5'].append(u_error_era5)
+
+        d['v_error'].append(v_error)
+
         
     df_pressure=pd.DataFrame(data=d)
     df_pressure=df_pressure.sort_values(by=['plev'])
@@ -93,12 +103,12 @@ def pressure_ax(ax, df,rmsvd_label):
          #   sample_stats=sample_unit
         #else:
          #   sample_stats=sample_stats.append(sample_unit)
-    ax.plot(df_pressure_era['rmsvd_era5'], df_pressure_era.plev, label='ERA 5')
+    ax.plot(df_pressure['u_error_era5'], df_pressure.plev, label='ERA 5')
     ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
     ax.legend(frameon=False, loc='upper left')
-    ax.set_xlabel('RMSVD [m/s]')
+    ax.set_xlabel('bias [m/s]')
     ax.set_ylabel('Pressure [hPa]')
-    ax.set_xlim(2,10)
+    ax.set_xlim(-10,5)
     ax.set_yscale('symlog')
     ax.set_yticklabels(np.arange(900, 50, -125))
     ax.set_ylim(df['plev'].max(), df['plev'].min())
@@ -136,8 +146,8 @@ def multiple_pressure_map(df_jan, df_july, fname):
     ax3=plt.subplot(2,1,2,projection=ccrs.PlateCarree())
 
     axlist = [ax1,ax2,ax3]
-    axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
-    axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
+    axlist[0]=pressure_ax(axlist[0], df_jan, 'v_error')
+    axlist[1]=pressure_ax(axlist[1], df_july, 'v_error')
     df=location_loader()
     axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
 
@@ -158,23 +168,28 @@ def preprocess(df):
     df=df[df.u_wind>-1000]
     udiff=df.u_wind-df.u
     vdiff=df.v_wind-df.v
+    df['u_error']=-udiff
+    df['u_error_era5']=df.u-df.u_era5
+    df['v_error_era5']=df.v-df.v_era5
+
+    df['v_error']=-vdiff
     df['error_mag']=np.sqrt((df.u-df.u_era5)**2+(df.v-df.v_era5)**2)
     df['error_square']=udiff**2+vdiff**2
     df['error_square_era5']=(df.u_wind-df.u_era5)**2+(df.v_wind-df.v_era5)**2
+    #df=df[df.lat.between(-30,30)]
     return df
 
 
 def main():
     df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model_thick_plev.pkl')
     df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model_thick_plev.pkl')
-
     df_jan=preprocess(df_jan)
     df_jan=df_jan.drop_duplicates()
     
     df_july=preprocess(df_july)
     df_july=df_july.drop_duplicates()
     
-    multiple_pressure_map(df_jan,df_july,  'rmsvd_map')
+    multiple_pressure_map(df_jan,df_july,  'bias-coarse_v')
     
     
     
