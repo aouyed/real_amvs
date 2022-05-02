@@ -43,7 +43,7 @@ def ds_closer(date,ds,time):
     month = date.strftime('%m')
     day  = date.strftime('%d')
     print(ds)
-    ds.to_netcdf('../data/processed/'+month+'_'+day+'_'+year+'_'+time+'.nc')
+    ds.to_netcdf('../data/processed/inpaint_'+month+'_'+day+'_'+year+'_'+time+'.nc')
  
 def model_closer(date):
     date = pd.to_datetime(str(date)) 
@@ -58,13 +58,13 @@ def model_loader(date, pressure):
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
-    ds_model=  xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+    ds_model=  xr.open_dataset('../data/interim/coarse_model_'+month+'_'+day+'_'+year+'.nc')
     ds_model=ds_model.sel(level=pressure, method='nearest')
     ds_model=ds_model.drop('level')
-    ds_model['vort_era5_smooth']=  ds_model['vo'].rolling(
-        latitude=5, longitude=5, center=True).mean()
-    ds_model['div_era5_smooth']=  ds_model['d'].rolling(
-        latitude=5, longitude=5, center=True).mean()
+   # ds_model['vort_era5_smooth']=  ds_model['vo'].rolling(
+    #    latitude=5, longitude=5, center=True).mean()
+    #ds_model['div_era5_smooth']=  ds_model['d'].rolling(
+     #   latitude=5, longitude=5, center=True).mean()
     ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
     ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
     return ds_model
@@ -117,8 +117,9 @@ def serial_loop(ds):
 
         
 def main():
-    #ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_'+ month_string +'.nc')
-    ds=xr.open_dataset('../data/processed/jan_28_climcaps.nc')
+    ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_'+ month_string +'.nc')
+    #ds=xr.open_dataset('../data/processed/jan_28_climcaps.nc')
+    ds=ds.sel(plev=ds['plev'].values[-1:])
     serial_loop(ds)
     
    

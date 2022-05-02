@@ -13,6 +13,8 @@ from metpy.units import units
 import inpainter 
 import main as fsa
 from datetime import timedelta
+from scipy import ndimage as nd
+import matplotlib.pyplot as plt
 
 
 
@@ -27,6 +29,28 @@ np.seterr(divide='ignore')
 
 
 LABEL='specific_humidity_mean'
+
+def fill(data, invalid=None):
+    """
+    (algorithm created by Juh_:https://stackoverflow.com/users/1206998/juh)
+    Replace the value of invalid 'data' cells (indicated by 'invalid') 
+    by the value of the nearest valid data cell
+
+    Input:
+        data:    numpy array of any dimension
+        invalid: a binary array of same shape as 'data'. 
+                 data value are replaced where invalid is True
+                 If None (default), use: invalid  = np.isnan(data)
+
+    Output: 
+        Return a filled array. 
+    """    
+    if invalid is None: invalid = np.isnan(data)
+
+    ind = nd.distance_transform_edt(invalid, 
+                                    return_distances=False, 
+                                    return_indices=True)
+    return data[tuple(ind)]
 
 def daterange(start_date, end_date, dhour):
     date_list = []
@@ -50,7 +74,7 @@ def calc(frame0, frame):
     #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
 
 
-    flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
+    flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3,10, 3, 3, 1.2, 0)
     #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 1, 1.2, 0)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
@@ -58,9 +82,17 @@ def calc(frame0, frame):
     return flowx, flowy
  
 def frame_retreiver(ds):
-    frame= np.squeeze(ds[LABEL].values)  
+    ds_inpaint=ds
+    frame= np.squeeze(ds[LABEL].values)
+    plt.imshow(frame)
+    plt.show()
+    plt.close()
+    frame=fill(frame)
+    plt.imshow(frame)
+    plt.show()
+    plt.close()
     #frame=np.nan_to_num(frame)
-    frame=inpainter.drop_nan(frame)
+    #rame=inpainter.drop_nan(frame)
     return frame
     
 def prepare_ds(ds):

@@ -14,7 +14,7 @@ import cartopy.crs as ccrs
 
 
 
-THRESHOLDS=[100,10]
+THRESHOLDS=[10]
 
 def scatter(x,y):
     fig, ax=plt.subplots()
@@ -108,7 +108,7 @@ def pressure_ax(ax, df,rmsvd_label):
     ax.legend(frameon=False, loc='upper left')
     ax.set_xlabel('bias [m/s]')
     ax.set_ylabel('Pressure [hPa]')
-    ax.set_xlim(-10,5)
+    #ax.set_xlim(-10,5)
     ax.set_yscale('symlog')
     ax.set_yticklabels(np.arange(900, 50, -125))
     ax.set_ylim(df['plev'].max(), df['plev'].min())
@@ -146,8 +146,8 @@ def multiple_pressure_map(df_jan, df_july, fname):
     ax3=plt.subplot(2,1,2,projection=ccrs.PlateCarree())
 
     axlist = [ax1,ax2,ax3]
-    axlist[0]=pressure_ax(axlist[0], df_jan, 'v_error')
-    axlist[1]=pressure_ax(axlist[1], df_july, 'v_error')
+    axlist[0]=pressure_ax(axlist[0], df_jan, 'rmsvd')
+    axlist[1]=pressure_ax(axlist[1], df_july, 'rmsvd')
     df=location_loader()
     axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
 
@@ -181,11 +181,10 @@ def preprocess(df):
 
 
 def main():
-    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model_thick_plev.pkl')
-    df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model_thick_plev.pkl')
+    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model_thick_plev_unbiased.pkl')
+    df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model_thick_plev_unbiased.pkl')
     df_jan=preprocess(df_jan)
     df_jan=df_jan.drop_duplicates()
-    
     df_july=preprocess(df_july)
     df_july=df_july.drop_duplicates()
     
