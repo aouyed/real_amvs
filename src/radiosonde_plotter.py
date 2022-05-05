@@ -103,7 +103,7 @@ def pressure_ax(ax, df,rmsvd_label):
          #   sample_stats=sample_unit
         #else:
          #   sample_stats=sample_stats.append(sample_unit)
-    ax.plot(df_pressure['u_error_era5'], df_pressure.plev, label='ERA 5')
+    ax.plot(df_pressure['rmsvd_era5'], df_pressure.plev, label='ERA 5')
     ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
     ax.legend(frameon=False, loc='upper left')
     ax.set_xlabel('bias [m/s]')
@@ -151,9 +151,9 @@ def multiple_pressure_map(df_jan, df_july, fname):
     df=location_loader()
     axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
 
-    axlist[0].text(2.5,775,'(a)')
-    axlist[1].text(2.5,775,'(b)')
-    axlist[2].text(-170,-60,'(c)')
+    #axlist[0].text(2.5,775,'(a)')
+    #axlist[1].text(2.5,775,'(b)')
+    #axlist[2].text(-170,-60,'(c)')
 
 
     fig.tight_layout()
@@ -181,14 +181,14 @@ def preprocess(df):
 
 
 def main():
-    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model_thick_plev_unbiased.pkl')
+    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_modelnn_tlv1.pkl')
     df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model_thick_plev_unbiased.pkl')
     df_jan=preprocess(df_jan)
     df_jan=df_jan.drop_duplicates()
-    df_july=preprocess(df_july)
-    df_july=df_july.drop_duplicates()
+    #df_july=preprocess(df_july)
+    #df_july=df_july.drop_duplicates()
     
-    multiple_pressure_map(df_jan,df_july,  'bias-coarse_v')
+    multiple_pressure_map(df_jan,df_jan,  'rmsvd')
     
     
     

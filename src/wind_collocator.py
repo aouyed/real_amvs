@@ -68,7 +68,7 @@ def collocated_winds(df, tag):
             df_rs=df_rs.loc[df_rs['date']==date]
             if not df_rs.empty:
                 for orbit in ('am','pm'):
-                    ds_path=obs_time.strftime('../data/processed/%m_%d_%Y')+'_'+orbit+tag+'.nc'
+                    ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
                     dsdate = obs_time.strftime('%m_%d_%Y')
                     ds=xr.open_dataset(ds_path)
                     ds=ds.sel(satellite='snpp')
@@ -108,10 +108,10 @@ def collocated_winds(df, tag):
 
 def main():
 
-    df=pd.read_pickle('../data/interim/dataframes/'+ c.month_string+'_igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+ c.month_string+'_nn_tlv1_igra_id.pkl')
     df=df.reset_index(drop=True)
     print(df)
-    collocated_winds(df,'_thick_plev_unbiased')
+    collocated_winds(df,'nn_tlv1')
 
 
 

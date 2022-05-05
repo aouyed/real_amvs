@@ -74,8 +74,13 @@ def calc(frame0, frame):
     #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
 
 
-    flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3,10, 3, 3, 1.2, 0)
+    #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
+    #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3,10, 3, 3, 1.2, 0)
     #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 1, 1.2, 0)
+    #optical_flow = cv2.DualTVL1OpticalFlow_create()
+    optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
+    #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
+    flowd = optical_flow.calc(nframe0, nframe, None)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
      
@@ -84,17 +89,30 @@ def calc(frame0, frame):
 def frame_retreiver(ds):
     ds_inpaint=ds
     frame= np.squeeze(ds[LABEL].values)
-    plt.imshow(frame)
-    plt.show()
-    plt.close()
+    #plt.imshow(frame)
+    #plt.show()
+    #plt.close()
     frame=fill(frame)
-    plt.imshow(frame)
-    plt.show()
-    plt.close()
+    #plt.imshow(frame)
+    #plt.show()
+    #plt.close()
     #frame=np.nan_to_num(frame)
     #rame=inpainter.drop_nan(frame)
     return frame
     
+def frame_retreiver_ns(ds):
+    frame= np.squeeze(ds[LABEL].values)  
+    #plt.imshow(frame)
+    #plt.show()
+    #plt.close()
+    #frame=np.nan_to_num(frame)
+    frame=inpainter.drop_nan(frame)
+    #plt.imshow(frame)
+    #plt.show()
+    #plt.close()
+    return frame
+
+
 def prepare_ds(ds):
     ds['humidity_overlap'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
     ds['flowx'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
@@ -149,8 +167,8 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     return ds_merged, ds_snpp, ds_j1, df_snpp
 
 def flow_calculator(ds_snpp, ds_j1, ds_merged):
-    frame0=frame_retreiver(ds_j1)
-    frame=frame_retreiver(ds_snpp)
+    frame0=frame_retreiver_ns(ds_j1)
+    frame=frame_retreiver_ns(ds_snpp)
     flowx,flowy=calc(frame0, frame)
     flowx = np.expand_dims(flowx, axis=2)
     flowy = np.expand_dims(flowy, axis=2)

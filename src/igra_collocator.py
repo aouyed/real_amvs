@@ -39,7 +39,7 @@ def space_time_collocator(days, deltat):
         print(day)
         for time in ('am','pm'):
             dsdate = day.strftime('%m_%d_%Y')
-            ds = xr.open_dataset('../data/processed/' + dsdate+'_'+time+'.nc')
+            ds = xr.open_dataset('../data/processed/nn_tlv1_' + dsdate+'_'+time+'.nc')
             ds-ds.sel(satellite='snpp')
             df_unit=ds[['obs_time','u']].to_dataframe()
             df_unit=df_unit.reset_index()
@@ -145,8 +145,8 @@ def main():
     df=df.reset_index(drop=True)
     df=df.drop_duplicates()
     df=collocated_igra_ids(df)
-    df.to_pickle('../data/interim/dataframes/'+month_string+'_igra_id.pkl')
-    df=pd.read_pickle('../data/interim/dataframes/'+month_string+'_igra_id.pkl')
+    df.to_pickle('../data/interim/dataframes/'+month_string+'_nn_tlv1_igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+month_string+'_nn_tlv1_igra_id.pkl')
     print(df)
     igra_downloader(df,days, month_string)
 

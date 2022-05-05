@@ -43,7 +43,7 @@ def ds_closer(date,ds,time):
     month = date.strftime('%m')
     day  = date.strftime('%d')
     print(ds)
-    ds.to_netcdf('../data/processed/inpaint_'+month+'_'+day+'_'+year+'_'+time+'.nc')
+    ds.to_netcdf('../data/processed/full_nn_tlv1_'+month+'_'+day+'_'+year+'_'+time+'.nc')
  
 def model_closer(date):
     date = pd.to_datetime(str(date)) 
@@ -95,7 +95,7 @@ def ds_unit_calc(ds, day,pressure, time):
 
 
 def serial_loop(ds):
-    for day in [ds['day'].values[0]]:
+    for day in tqdm(ds['day'].values):
         print(day)
         #ed.downloader(day)
         for time in ds['time'].values: 
@@ -118,8 +118,10 @@ def serial_loop(ds):
         
 def main():
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_'+ month_string +'.nc')
+    #ds=ds.sel(plev=[850,700,500,400], method='nearest')    
+    print(ds)
     #ds=xr.open_dataset('../data/processed/jan_28_climcaps.nc')
-    ds=ds.sel(plev=ds['plev'].values[-1:])
+    #ds=ds.sel(plev=ds['plev'].values[-1:])
     serial_loop(ds)
     
    
