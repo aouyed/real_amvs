@@ -127,8 +127,8 @@ def scatter_plot_cartopy(ax, title, x, y):
 
 
 def location_loader():
-    df1=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model_thick_plev.pkl')
-    df2=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model_thick_plev.pkl')
+    df1=pd.read_pickle('../data/processed/dataframes/january_winds_rs_modelfull_nn_tlv1.pkl')
+    df2=pd.read_pickle('../data/processed/dataframes/july_winds_rs_modelfull_nn_tlv1.pkl') 
     df1.reset_index(drop=True)
     df2.reset_index(drop=True)
     df=df1.append(df2).reset_index(drop=True)
@@ -151,9 +151,9 @@ def multiple_pressure_map(df_jan, df_july, fname):
     df=location_loader()
     axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
 
-    #axlist[0].text(2.5,775,'(a)')
-    #axlist[1].text(2.5,775,'(b)')
-    #axlist[2].text(-170,-60,'(c)')
+    axlist[0].text(4,275,'(a)')
+    axlist[1].text(4.,275,'(b)')
+    axlist[2].text(-170,-40,'(c)')
 
 
     fig.tight_layout()
@@ -181,14 +181,14 @@ def preprocess(df):
 
 
 def main():
-    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_modelnn_tlv1.pkl')
-    df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model_thick_plev_unbiased.pkl')
+    df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_modelfull_nn_tlv1.pkl')
+    df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_modelfull_nn_tlv1.pkl')
     df_jan=preprocess(df_jan)
     df_jan=df_jan.drop_duplicates()
-    #df_july=preprocess(df_july)
-    #df_july=df_july.drop_duplicates()
+    df_july=preprocess(df_july)
+    df_july=df_july.drop_duplicates()
     
-    multiple_pressure_map(df_jan,df_jan,  'rmsvd')
+    multiple_pressure_map(df_jan,df_july,  'rmsvd')
     
     
     

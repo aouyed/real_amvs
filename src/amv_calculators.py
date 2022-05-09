@@ -71,13 +71,7 @@ def calc(frame0, frame):
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-    #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
-
-
-    #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 7, 1.2, 0)
-    #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3,10, 3, 3, 1.2, 0)
-    #flowd=cv2.calcOpticalFlowFarneback(nframe0,nframe, None, 0.5, 3, 20, 3, 1, 1.2, 0)
-    #optical_flow = cv2.DualTVL1OpticalFlow_create()
+    
     optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
     #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
     flowd = optical_flow.calc(nframe0, nframe, None)

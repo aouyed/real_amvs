@@ -108,10 +108,10 @@ def collocated_winds(df, tag):
 
 def main():
 
-    df=pd.read_pickle('../data/interim/dataframes/'+ c.month_string+'_nn_tlv1_igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+ c.month_string+'full_nn_tlv1_igra_id.pkl')
     df=df.reset_index(drop=True)
     print(df)
-    collocated_winds(df,'nn_tlv1')
+    collocated_winds(df,'full_nn_tlv1')
 
 
 

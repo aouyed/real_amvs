@@ -37,21 +37,17 @@ def big_histogram(ds, column_x, column_y,  bins=100):
 
 
 
-ds=xr.open_dataset('../data/processed/july.nc')
+ds=xr.open_dataset('../data/processed/full_nn_tlv1_01_01_2020_am.nc')
+#s=xr.open_dataset('../data/processed/ratio.nc')
+
 ds=ds.sel(satellite='j1',day=ds['day'].values[0])
-ds=plotter.angle(ds)
-ds['dqdx']=ds['humidity_overlap'].differentiate('longitude')
-ds['dqdy']=ds['humidity_overlap'].differentiate('latitude')
-ds['grad_q']=np.sqrt(ds.dqdx**2+ds.dqdy**2)
-ds=plotter.angle_grad_q(ds)
+ds=ds.sel(plev=850, method='nearest')
 ds=plotter.compute(ds)
-#ds=ds.where(ds.error_mag<10)
 ds['angle']=abs(ds['angle'])
 ds['angle_q']=abs(ds['angle_q'])
-ds=ds.where(ds.angle_q<20)
-print(np.sqrt(ds['error_square'].mean()))
-breakpoint()
+ds=ds.where(ds.error_mag<10)
+
 #hist,edges=big_histogram(ds, 'angle_q', 'angle')
-hist,edges=big_histogram(ds, 'angle_q', 'error_mag')
+hist,edges=big_histogram(ds, 'grad_q', 'angle')
 plt.imshow(hist, vmin=0, vmax=100, extent=[0,1,0,1],origin='upper')
 plt.show()
