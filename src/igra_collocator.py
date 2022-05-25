@@ -11,6 +11,7 @@ import os.path
 import config as c
 import amv_calculators as ac
 from siphon.simplewebservice.igra2 import IGRAUpperAir
+from parameters import parameters 
 
 PATH='../data/interim/rs_dataframes/'
 
@@ -33,13 +34,13 @@ def preprocess(ds):
     return ds
 
 
-def space_time_collocator(days, deltat):
+def space_time_collocator(days, deltat, param):
     df=pd.DataFrame()
     for day in days:
         print(day)
         for time in ('am','pm'):
             dsdate = day.strftime('%m_%d_%Y')
-            ds = xr.open_dataset('../data/processed/'+c.TAG+'_' + dsdate+'_'+time+'.nc')
+            ds = xr.open_dataset('../data/processed/'+param.tag+'_'+ dsdate+'_'+time+'.nc')
             ds-ds.sel(satellite='snpp')
             df_unit=ds[['obs_time','u']].to_dataframe()
             df_unit=df_unit.reset_index()
@@ -136,22 +137,23 @@ def igra_downloader(df,days, month_string):
     
 
 
-def main():
+def main(param):
     deltat=timedelta(hours=HOURS)
-    start_date=c.MONTH
-    end_date=c.MONTH + timedelta(days=6)
+    start_date=param.month
+    end_date=start_date + timedelta(days=6)
     days=ac.daterange(start_date, end_date, 24)
-    month_string=c.month_string
-    df=space_time_collocator(days, deltat)
+    month_string=param.month_string
+    df=space_time_collocator(days, deltat, param)
     df=df.reset_index(drop=True)
     df=df.drop_duplicates()
     df=collocated_igra_ids(df)
-    df.to_pickle('../data/interim/dataframes/'+month_string+c.TAG+'_igra_id.pkl')
-    df=pd.read_pickle('../data/interim/dataframes/'+month_string+c.TAG+'_igra_id.pkl')
+    df.to_pickle('../data/interim/dataframes/'+param.tag+'_igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+param.tag+'_igra_id.pkl')
     print(df)
     igra_downloader(df,days, month_string)
 
 
 
 if __name__ == '__main__':
-    main()
+    param=parameters()
+    main(param)

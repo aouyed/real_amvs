@@ -10,6 +10,7 @@ import time
 import os.path
 import config as c
 from tqdm import tqdm
+from parameters import parameters 
 HOURS=1.5 
 PATH='../data/interim/rs_dataframes/'
 
@@ -50,11 +51,12 @@ def df_calculator(df, df_s, df_m, lat, lon, lat_rs,lon_rs):
     return df
    
     
-def collocated_winds(df, tag):
+def collocated_winds(df, param):
+    tag=param.tag
     df_total=pd.DataFrame()
     for parameters in tqdm(df.values):
         lat,lon,lon_rs, lat_rs, station,obs_time=parameters
-        fname=PATH+c.month_string+'_'+station+'.pkl'
+        fname=PATH+param.month_string+'_'+station+'.pkl'
         if os.path.isfile(fname):
             df_rs=pd.read_pickle(fname)
             df_rs=df_rs.reset_index()
@@ -91,7 +93,7 @@ def collocated_winds(df, tag):
                         df_total=df_rs
                     else:
                         df_total=df_total.append(df_rs)
-    df_total.to_pickle('../data/processed/dataframes/'+c.month_string+'_winds_rs_model'+tag+'.pkl')
+    df_total.to_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+tag+'.pkl')
     
 
                 
@@ -106,14 +108,15 @@ def collocated_winds(df, tag):
     
 
 
-def main():
+def main(param):
 
-    df=pd.read_pickle('../data/interim/dataframes/'+ c.month_string+ c.TAG+'_igra_id.pkl')
+    df=pd.read_pickle('../data/interim/dataframes/'+ param.tag +'_igra_id.pkl')
     df=df.reset_index(drop=True)
     print(df)
-    collocated_winds(df,c.TAG)
+    collocated_winds(df,param)
 
 
 
 if __name__ == '__main__':
-    main()
+    param=parameters()
+    main(param)
