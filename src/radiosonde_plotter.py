@@ -31,7 +31,9 @@ def scatter(x,y):
 def pressure_df(df):
     plevs=df['plev'].unique()
     d={'plev':[],'rmsvd':[],'rmsvd_era5':[],'u_error':[], 'v_error':[],
-       'u_error_era5':[], 'angle':[], 'angle_era5':[]}
+       'u_error_era5':[], 'v_error_era5':[], 'angle':[], 
+       'angle_era5':[],'angle_bias':[],'angle_bias_era5':[],
+       'speed_bias':[],'speed_bias_era5':[]}
     for plev in plevs:
         
         df_unit=df[df.plev==plev]
@@ -40,8 +42,14 @@ def pressure_df(df):
         u_error_era5=df_unit['u_error_era5'].mean()
 
         v_error=df_unit['v_error'].mean()
+        v_error_era5=df_unit['v_error_era5'].mean()
+
         angle=df_unit['angle'].mean()
         angle_era5=df_unit['angle_era5'].mean()
+        angle_bias=df_unit['signed_angle'].mean()
+        angle_bias_era5=df_unit['signed_angle_era5'].mean()
+        speed_bias=df_unit['speed_error'].mean()
+        speed_bias_era5=df_unit['speed_error_era5'].mean()
 
 
         rmsvd_era5=np.sqrt(df_unit['error_square_era5'].mean())
@@ -52,8 +60,18 @@ def pressure_df(df):
         d['u_error_era5'].append(u_error_era5)
 
         d['v_error'].append(v_error)
+        d['v_error_era5'].append(v_error_era5)
+
+
         d['angle'].append(angle)
         d['angle_era5'].append(angle_era5)
+        
+        d['speed_bias'].append(speed_bias)
+        d['speed_bias_era5'].append(speed_bias_era5)
+        
+        d['angle_bias'].append(angle_bias)
+        d['angle_bias_era5'].append(angle_bias_era5)
+
 
 
         
@@ -107,12 +125,23 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
     df=preprocess(df)
     df=df.drop_duplicates()
     df_pressure_era= pressure_df(df)
-    breakpoint()
+    print('era_5')
+    print(df['signed_angle_era5'].mean())
+    print(df['speed_error_era5'].mean())
+    
+    print(df['signed_angle'].mean())
+    print(df['speed_error'].mean())
+
+
     
     for thresh in THRESHOLDS:
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
+        print(thresh)
+        print(df_unit['signed_angle'].mean())
+        print(df_unit['speed_error'].mean())
+
         df_pressure= pressure_df(df_unit)
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
         #sample_unit=sample_stat_calc(df_pressure,  df_pressure_era, thresh)
@@ -188,7 +217,7 @@ def multiple_pressure_map(fname, label, xlabel, param):
     
 def four_panel_plot(fname, param, var1='rmsvd', var2='angle', 
                      xlabel1='RMSVD [m/s]', 
-                     xlabel2=,'Angle [deg]' ,xlim1=(0,12), xlim2=(10,60)):
+                     xlabel2='Angle [deg]',xlim1=(0,12), xlim2=(10,60)):
     fig, axes = plt.subplots(nrows=2, ncols=2)
     axlist = axes.flat
     
@@ -262,25 +291,36 @@ def preprocess(df):
     udiff=df.u_wind-df.u
     vdiff=df.v_wind-df.v
     df['u_error']=-udiff
-    df['u_error_era5']=df.u-df.u_era5
-    df['v_error_era5']=df.v-df.v_era5
-
     df['v_error']=-vdiff
+    df['speed']=np.sqrt(df.u**2+df.v**2)
+    df['speed_era5']=np.sqrt(df.u_era5**2+df.v_era5**2)
+    df['speed_wind']=np.sqrt(df.u_wind**2+df.v_wind**2)
+    df['speed_error']=df.speed-df.speed_wind
+    df['speed_error_era5']=df.speed_era5-df.speed_wind
+    df['u_error_era5']=df.u_wind-df.u_era5
+    df['v_error_era5']=df.v_wind-df.v_era5
+
     df['error_mag']=np.sqrt((df.u-df.u_era5)**2+(df.v-df.v_era5)**2)
     df['error_square']=udiff**2+vdiff**2
     df['error_square_era5']=(df.u_wind-df.u_era5)**2+(df.v_wind-df.v_era5)**2
-    df=angle(df, 'u','v','angle')
-    df=angle(df, 'u_era5','v_era5','angle_era5')
+    df=angle(df, 'u','v','signed_angle')
+    df=angle(df, 'u_era5','v_era5','signed_angle_era5')
+    df['angle']=abs(df['signed_angle'])
+    df['angle_era5']=abs(df['signed_angle_era5'])
+   # df=df[df.speed>3]
 
-    df['angle']=abs(df['angle'])
-    df['angle_era5']=abs(df['angle_era5'])
 
-    #df=df[df.lat.between(-30,30)]
     return df
 
 
 def main(param):
-    angle_rmsvd_plot('test', param)
+    four_panel_plot('test_rmsvd_angle', param)
+    four_panel_plot('bias', param, var1='speed_bias', var2='angle_bias', 
+                     xlabel1='Bias [m/s]', 
+                     xlabel2='Angle bias [deg]', xlim1=(-5,5), xlim2=(-20,20))
+    four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
+                     xlabel1='u bias [m/s]', 
+                     xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
     location_plot('location', param)
     
     #df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model'+c.TAG+'.pkl')
