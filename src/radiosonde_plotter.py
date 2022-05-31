@@ -142,7 +142,10 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         df_unit=preprocess(df_unit)
         #df_unit=df_unit.drop_duplicates()
         print(thresh)
+        print(month_string)
         print(df_unit['signed_angle'].mean())
+        print(df_unit['angle'].mean())
+
         print(df_unit['speed_error'].mean())
         print(df_unit['speed'].mean())
 

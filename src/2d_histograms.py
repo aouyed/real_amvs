@@ -95,7 +95,7 @@ def binned_plot(ds):
     plt.close()
     
     
-ds=xr.open_dataset('../data/processed/coarse_january_5_t10_01_01_2020_am.nc')
+ds=xr.open_dataset('../data/processed/tvl1_coarse_january_5_t10_01_01_2020_am.nc')
 #s=xr.open_dataset('../data/processed/ratio.nc')
 
 ds=ds.sel(satellite='j1',day=ds['day'].values[0])
@@ -107,7 +107,6 @@ ds['angle_q']=abs(ds['angle_q'])
 
 ds['humidity_overlap']=1000*ds['humidity_overlap']
 print(xr.corr(ds.angle_q, ds.error_mag))
-breakpoint()
 binned_plot(ds)
 #three_panel_hist(ds, 'angle',[0,180])
 #three_panel_hist(ds, 'speed_diff',[-5,5])
