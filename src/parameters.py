@@ -13,6 +13,7 @@ class parameters:
     
     def __init__(self):
         self.tag=None
+        self.alg='tvl1'
         self.plev_coarse=5
         self.thresh=10
         self.month=datetime(2020,1,1)
@@ -20,27 +21,30 @@ class parameters:
         self.geodesics={'swath':[(-35.4, 28.75), (49.74, 66.13),'latitude'],
            'equator':[(-36.5, -127.7),(55.5, -95.5),'latitude']}
         self.pressures=[850, 700, 500, 400]
-        self.set_tag(self.plev_coarse, self.thresh, self.month_string)
+        self.set_tag(self.plev_coarse, self.thresh, self.month_string, self.alg)
         
 
 
         
     def set_plev_coarse(self, n_layers):
         self.plev_coarse=n_layers
-        self.set_tag(self.plev_coarse, self.thresh, self.month_string)
+        self.set_tag(self.plev_coarse, self.thresh, self.month_string, self.alg)
 
     
     def set_thresh(self, thresh):
         self.thresh=thresh
-        self.set_tag(self.plev_coarse, self.thresh, self.month_string)
+        self.set_tag(self.plev_coarse, self.thresh, self.month_string, self.alg)
         
-    def set_tag(self, plev_coarse, thresh, month_string):
-        self.tag='coarse_' + month_string + '_' + str(plev_coarse)+'_t'+str(thresh)
+    def set_tag(self, plev_coarse, thresh, month_string, alg):
+        self.tag=alg+'_coarse_' + month_string + '_' + str(plev_coarse)+'_t'+str(thresh)
         
     def set_month(self, date):
         self.month=date
         self.month_string=self.month.strftime("%B").lower()
-        self.set_tag(self.plev_coarse, self.thresh, self.month_string)
+        self.set_tag(self.plev_coarse, self.thresh, self.month_string, self.alg)
        
-    
+    def set_alg(self, alg):
+        self.alg=alg
+        self.set_tag(self.plev_coarse, self.thresh, self.month_string, self.alg)
+     
         

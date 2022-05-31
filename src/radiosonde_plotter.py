@@ -14,7 +14,7 @@ import cartopy.crs as ccrs
 from parameters import parameters 
 from datetime import datetime 
 
-THRESHOLDS=[10, 4]
+THRESHOLDS=[10]
 TAGS=[['filtered_thick_plev_tlv1',10],['filtered_4_thick_plev_tlv1',4]]
 def scatter(x,y):
     fig, ax=plt.subplots()
@@ -86,6 +86,7 @@ def pressure_plot(df,rmsvd_label, title):
         df_unit=df[df.error_mag<thresh]
         print(df_unit.shape)
         df_pressure= pressure_df(df_unit)
+        #df_pressure=df_pressure_era
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
     ax.plot(df_pressure_era['rmsvd_era5'], df_pressure_era.plev, label='ERA 5')
     ax.axvline(4.05,linestyle='dashed',label='Aeolus (Mie)')
@@ -123,6 +124,7 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
 
     df=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
     df=preprocess(df)
+    
     df=df.drop_duplicates()
     df_pressure_era= pressure_df(df)
     print('era_5')
@@ -138,11 +140,17 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
+        #df_unit=df_unit.drop_duplicates()
         print(thresh)
         print(df_unit['signed_angle'].mean())
         print(df_unit['speed_error'].mean())
+        print(df_unit['speed'].mean())
+
+        print(df_unit['u_error'].mean())
+        print(df_unit['v_error'].mean())
 
         df_pressure= pressure_df(df_unit)
+        
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
         #sample_unit=sample_stat_calc(df_pressure,  df_pressure_era, thresh)
         #if sample_stats.empty:
@@ -150,7 +158,8 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         #else:
          #   sample_stats=sample_stats.append(sample_unit)
     ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
-    #ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
+    if (rmsvd_label=='rmsvd'):
+        ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
     #ax.legend(frameon=False, loc='upper left')
     ax.set_xlabel(xlabel)
     ax.set_ylabel('Pressure [hPa]')
@@ -246,7 +255,7 @@ def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     param.set_month(datetime(2020,1,1))
     axlist[0]=pressure_ax(axlist[0],param, label,xlabel, xlim)
     param.set_month(datetime(2020,7,1))
-
+    #param.set_month(datetime(2020,7,1))
     axlist[1]=pressure_ax(axlist[1], param, label, xlabel, xlim)
     #df=location_loader(param)
     #axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
@@ -288,17 +297,22 @@ def angle(df, ulabel, vlabel, angle_label):
        
 def preprocess(df):
     df=df[df.u_wind>-1000]
-    udiff=df.u_wind-df.u
-    vdiff=df.v_wind-df.v
-    df['u_error']=-udiff
-    df['v_error']=-vdiff
+    udiff=df.u-df.u_wind
+    vdiff=df.v-df.v_wind
+    #udiff=df.u_era5-df.u_wind
+    #vdiff=df.v_era5-df.v_wind
+    df['u_error']= udiff
+    df['v_error']= vdiff
     df['speed']=np.sqrt(df.u**2+df.v**2)
     df['speed_era5']=np.sqrt(df.u_era5**2+df.v_era5**2)
     df['speed_wind']=np.sqrt(df.u_wind**2+df.v_wind**2)
-    df['speed_error']=df.speed-df.speed_wind
+    #df['speed_error']=df.speed-df.speed_wind
+    df['speed_error']=df.speed-df.speed_era5
+    #df['speed_error_norad']=df.speed-df.speed_era5
+
     df['speed_error_era5']=df.speed_era5-df.speed_wind
-    df['u_error_era5']=df.u_wind-df.u_era5
-    df['v_error_era5']=df.v_wind-df.v_era5
+    df['u_error_era5']=df.u_era5-df.u_wind
+    df['v_error_era5']=df.v_era5-df.v_wind
 
     df['error_mag']=np.sqrt((df.u-df.u_era5)**2+(df.v-df.v_era5)**2)
     df['error_square']=udiff**2+vdiff**2
@@ -314,14 +328,18 @@ def preprocess(df):
 
 
 def main(param):
-    four_panel_plot('test_rmsvd_angle', param)
+    four_panel_plot('rmsvd_angle', param)
+    
+    four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
+                     xlabel1='u bias [m/s]', 
+                     xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
     four_panel_plot('bias', param, var1='speed_bias', var2='angle_bias', 
                      xlabel1='Bias [m/s]', 
                      xlabel2='Angle bias [deg]', xlim1=(-5,5), xlim2=(-20,20))
     four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
                      xlabel1='u bias [m/s]', 
                      xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
-    location_plot('location', param)
+   #ocation_plot('location', param)
     
     #df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model'+c.TAG+'.pkl')
     #df_jan=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model'+c.TAG+'.pkl')
@@ -347,5 +365,7 @@ def main(param):
 
 if __name__=='__main__':
     param=parameters()
+    param.set_alg('tvl1')
+    param.set_month(datetime(2020,1,1))
     param.set_plev_coarse(5)
     main(param)

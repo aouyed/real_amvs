@@ -13,10 +13,11 @@ from parameters import parameters
 from datetime import datetime 
 
 param= parameters()
+param.set_alg('farneback')
 param.set_plev_coarse(5)
-for thresh in [10,4,100]:
+for thresh in [10, 100]:
     param.set_thresh(thresh)
-    for month in [7,1]:
+    for month in [1]:
         param.set_month(datetime(2020,month,1))
         vc.main(param)
         ic.main(param)

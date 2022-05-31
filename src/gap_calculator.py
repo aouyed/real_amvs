@@ -48,8 +48,7 @@ def overlap(ds, start, end):
     return ds_j1, ds_snpp, df_j1, df_snpp    
 
 
-        
-def main():
+def calculate_ratio():
     ds=xr.open_dataset('../data/processed/full_nn_tlv1_01_01_2020_am.nc')
     swathes=calc.swath_initializer(ds,5,swath_hours)
     ds['ratio'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
@@ -72,6 +71,19 @@ def main():
                                  'satellite':'j1','plev':pressure}]=ds_j1['ratio']
        
     ds.to_netcdf('../data/processed/ratio.nc')
+    
+    
+def calculate_corr():
+    ds=xr.open_dataset('../data/processed/ratio.nc')
+    u_error=ds['u']-ds['u_era5']
+    v_error=ds['v']-ds['v_era5']
+    print(ds['ratio'].max())
+    ds['error_mag']=np.sqrt(u_error**2+v_error**2)
+    print(xr.corr(ds.ratio,ds.error_mag)**2)
+        
+def main():
+    calculate_corr()
+ 
 if __name__ == '__main__':
     start_time = time.time()
     main()

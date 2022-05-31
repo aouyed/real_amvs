@@ -45,7 +45,7 @@ def main(param):
         date_string=date.strftime('%m_%d_%Y')
         thresh=param.thresh
         for orbit in ('am','pm'):
-            ds=xr.open_dataset('../data/processed/full_nn_tlv1_'+date_string+'_'+orbit+'.nc')
+            ds=xr.open_dataset('../data/processed/'+date_string+'_'+orbit+'.nc')
             ds=vertical_coarse(ds, thresh, param.plev_coarse)
             ds.to_netcdf('../data/processed/'+param.tag+'_'+ date_string+'_'+orbit+'.nc')
     
