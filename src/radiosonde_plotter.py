@@ -33,10 +33,12 @@ def pressure_df(df):
     d={'plev':[],'rmsvd':[],'rmsvd_era5':[],'u_error':[], 'v_error':[],
        'u_error_era5':[], 'v_error_era5':[], 'angle':[], 
        'angle_era5':[],'angle_bias':[],'angle_bias_era5':[],
-       'speed_bias':[],'speed_bias_era5':[]}
+       'speed_bias':[],'speed_bias_era5':[],'N':[]}
     for plev in plevs:
         
         df_unit=df[df.plev==plev]
+        n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+
         rmsvd=np.sqrt(df_unit['error_square'].mean())
         u_error=df_unit['u_error'].mean()
         u_error_era5=df_unit['u_error_era5'].mean()
@@ -71,68 +73,27 @@ def pressure_df(df):
         
         d['angle_bias'].append(angle_bias)
         d['angle_bias_era5'].append(angle_bias_era5)
-
+        d['N'].append(n_points)
 
 
         
     df_pressure=pd.DataFrame(data=d)
     df_pressure=df_pressure.sort_values(by=['plev'])
     return df_pressure 
-        
-def pressure_plot(df,rmsvd_label, title):
-    fig, ax=plt.subplots() 
-    df_pressure_era= pressure_df(df)
-    for thresh in THRESHOLDS:
-        df_unit=df[df.error_mag<thresh]
-        print(df_unit.shape)
-        df_pressure= pressure_df(df_unit)
-        #df_pressure=df_pressure_era
-        ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
-    ax.plot(df_pressure_era['rmsvd_era5'], df_pressure_era.plev, label='ERA 5')
-    ax.axvline(4.05,linestyle='dashed',label='Aeolus (Mie)')
-    ax.axvline(5.93,linestyle='dotted',label='GEO AMVs' )
-    ax.legend(frameon=False)
-    ax.set_xlabel('RMSVD [m/s]')
-    ax.set_ylabel('Pressure [hPa]')
-    ax.set_xlim(0,10)
-    ax.set_yscale('symlog')
-    ax.set_yticklabels(np.arange(900, 50, -100))
-    ax.set_ylim(df['plev'].max(), df['plev'].min())
-    ax.set_yticks(np.arange(900, 50, -100))
-    ax.set_title(title)
-    plt.savefig('../data/processed/plots/'+c.month_string+'_radiosonde_comparison.png', dpi=300)
-    plt.show()
-    plt.close()
+ 
            
-def sample_stat_calc(df_pressure, df_pressure_era, thresh):
-    sample_unit=df_pressure[df_pressure.plev.between(852.5,853)]
-    sample_era5=df_pressure_era[df_pressure_era.plev.between(852.5,853)]
-    sample_unit['rmsvd_era5']=  sample_era5['rmsvd_era5'].values.item()
-    
-    sample_unit2=df_pressure[df_pressure.plev.between(300,301)]
-    sample_era5=df_pressure_era[df_pressure_era.plev.between(300,300.1)]
-    sample_unit2['rmsvd_era5']=  sample_era5['rmsvd_era5'].values.item()
-        
-    sample_unit=sample_unit.append(sample_unit2)
-    sample_unit['thresh']=thresh
-    return sample_unit
     
 def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
     sample_stats=pd.DataFrame()
     month_string=param.month_string
-    param.set_thresh(100)
+    param.set_thresh(10)
 
     df=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
     df=preprocess(df)
     
     df=df.drop_duplicates()
     df_pressure_era= pressure_df(df)
-    print('era_5')
-    print(df['signed_angle_era5'].mean())
-    print(df['speed_error_era5'].mean())
-    
-    print(df['signed_angle'].mean())
-    print(df['speed_error'].mean())
+
 
 
     
@@ -140,30 +101,15 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
-        #df_unit=df_unit.drop_duplicates()
-        print(thresh)
-        print(month_string)
-        print(df_unit['signed_angle'].mean())
-        print(df_unit['angle'].mean())
-
-        print(df_unit['speed_error'].mean())
-        print(df_unit['speed'].mean())
-
-        print(df_unit['u_error'].mean())
-        print(df_unit['v_error'].mean())
-
+        n_points=df[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
         df_pressure= pressure_df(df_unit)
         
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
-        #sample_unit=sample_stat_calc(df_pressure,  df_pressure_era, thresh)
-        #if sample_stats.empty:
-         #   sample_stats=sample_unit
-        #else:
-         #   sample_stats=sample_stats.append(sample_unit)
-    ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
+        ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
     if (rmsvd_label=='rmsvd'):
         ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
-    #ax.legend(frameon=False, loc='upper left')
+   
+    ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
     ax.set_xlabel(xlabel)
     ax.set_ylabel('Pressure [hPa]')
     ax.set_xlim(xlim[0],xlim[1])
@@ -199,32 +145,7 @@ def location_loader(param):
     print(df.shape)
     return(df)
 
-    
-def multiple_pressure_map(fname, label, xlabel, param):
-    fig=plt.figure()
-    ax1= plt.subplot(2,2,1)
-    ax2= plt.subplot(2,2,2)
-    ax3=plt.subplot(2,1,2,projection=ccrs.PlateCarree())
 
-    axlist = [ax1,ax2,ax3]
-    param.set_month(datetime(2020,1,1))
-    axlist[0]=pressure_ax(axlist[0],param, label,xlabel)
-    param.set_month(datetime(2020,7,1))
-
-    axlist[1]=pressure_ax(axlist[1], param, label, xlabel)
-    df=location_loader(param)
-    axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
-
-    axlist[0].text(4,275,'(a)')
-    axlist[1].text(4.,275,'(b)')
-    axlist[2].text(-170,-40,'(c)')
-
-
-    fig.tight_layout()
-    plt.savefig('../data/processed/plots/'+param.tag+fname +
-                '.png', bbox_inches='tight', dpi=300)
-    plt.show()
-    plt.close()
     
     
 def four_panel_plot(fname, param, var1='rmsvd', var2='angle', 
@@ -242,27 +163,52 @@ def four_panel_plot(fname, param, var1='rmsvd', var2='angle',
     axlist[2].text(0.05,0.05,'(c)',transform=axlist[2].transAxes)
     axlist[3].text(0.05,0.05,'(d)',transform=axlist[3].transAxes)
 
-
-   
-
-
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag+fname +
                 '.png', bbox_inches='tight', dpi=300)
     plt.show()
     plt.close()
 
+
+def n_points_plot(param):
+   
+    
+     param.set_thresh(10)
+     param.set_month(datetime(2020,1,1))
+     df_jan=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+ param.tag +'.pkl')
+     df_jan=preprocess(df_jan)
+     df_pressure_jan= pressure_df(df_jan)
+     
+     param.set_month(datetime(2020,7,1))
+     df_july=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+ param.tag +'.pkl')
+     df_july=preprocess(df_july)
+     df_pressure_july= pressure_df(df_july)
+     
+     
+     fig, ax = plt.subplots()
+     ax.plot(df_pressure_jan['N'], df_pressure_jan.plev, label='january')
+     ax.plot(df_pressure_july['N'], df_pressure_july.plev, label='july')
+     ax.set_xlabel('Number of AMVs')
+     ax.set_ylabel('Pressure [hPa]')
+     ax.set_yscale('symlog')
+     ax.set_yticklabels(np.arange(900, 50, -125))
+     ax.set_ylim(df_jan['plev'].max(), df_jan['plev'].min())
+     ax.set_yticks(np.arange(900, 50, -125))
+     ax.legend(frameon=False)
+
+     fig.tight_layout()
+     plt.savefig('../data/processed/plots/n_points'+param.tag +
+                    '.png', bbox_inches='tight', dpi=300)
+     plt.show()
+     plt.close()
     
 
 def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     param.set_month(datetime(2020,1,1))
     axlist[0]=pressure_ax(axlist[0],param, label,xlabel, xlim)
     param.set_month(datetime(2020,7,1))
-    #param.set_month(datetime(2020,7,1))
     axlist[1]=pressure_ax(axlist[1], param, label, xlabel, xlim)
-    #df=location_loader(param)
-    #axlist[2]=scatter_plot_cartopy(axlist[2],'rs_coords',df['lon_rs'],df['lat_rs'])
-
+  
 def location_plot(fname, param):
     fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -293,7 +239,6 @@ def angle(df, ulabel, vlabel, angle_label):
     neg_function[neg_function > 0]=1
      
     
-    #ds['neg_function']=np.positive( ds['neg_function'])
     df[angle_label]=neg_function*df[angle_label]
     return df
 
@@ -342,25 +287,8 @@ def main(param):
     four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
                      xlabel1='u bias [m/s]', 
                      xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
-   #ocation_plot('location', param)
-    
-    #df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model'+c.TAG+'.pkl')
-    #df_jan=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model'+c.TAG+'.pkl')
 
-    #df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model'+c.TAG+'.pkl')
-    #df_jan=pd.read_pickle('../data/processed/dataframes/january_winds_rs_model.pkl')
-    #df_july=pd.read_pickle('../data/processed/dataframes/july_winds_rs_model.pkl')
-   
-    #df_jan=preprocess(df_jan)
-    #df_jan=df_jan.drop_duplicates()
-    #df_july=preprocess(df_july)
-    #df_july=df_july.drop_duplicates()
-    
-    #multiple_pressure_map(df_jan,df_july,  'rmsvd')
-    #multiple_pressure_map('angle_'+c.TAG, 'angle','angle [deg]',param)
-    #multiple_pressure_map('rmsvd_'+c.TAG, 'rmsvd','RMSVD [m/s]',param)
-
-    
+    n_points_plot(param)
     
     
     
