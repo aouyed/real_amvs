@@ -74,12 +74,54 @@ def pressure_df(df):
         d['angle_bias'].append(angle_bias)
         d['angle_bias_era5'].append(angle_bias_era5)
         d['N'].append(n_points)
+        
 
 
         
     df_pressure=pd.DataFrame(data=d)
     df_pressure=df_pressure.sort_values(by=['plev'])
     return df_pressure 
+
+
+
+def means(df):
+    plevs=df['plev'].unique()
+    d={}
+    
+    n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+
+    rmsvd=np.sqrt(df_unit['error_square'].mean())
+    u_error=df_unit['u_error'].mean()
+    u_error_era5=df_unit['u_error_era5'].mean()
+
+    v_error=df_unit['v_error'].mean()
+    v_error_era5=df_unit['v_error_era5'].mean()
+
+    angle=df_unit['angle'].mean()
+    angle_era5=df_unit['angle_era5'].mean()
+    angle_bias=df_unit['signed_angle'].mean()
+    angle_bias_era5=df_unit['signed_angle_era5'].mean()
+    speed_bias=df_unit['speed_error'].mean()
+    speed_bias_era5=df_unit['speed_error_era5'].mean()
+
+
+    rmsvd_era5=np.sqrt(df_unit['error_square_era5'].mean())
+    d['plev']=plev
+    d['rmsvd']=rmsvd
+    d['rmsvd_era5']=rmsvd_era5
+    d['u_error']=u_error
+    d['u_error_era5']=u_error_era5
+    d['v_error']=v_error
+    d['v_error_era5']=v_error_era5
+    d['angle']=angle
+    d['angle_era5']=angle_era5
+    d['speed_bias']=speed_bias
+    d['speed_bias_era5']=speed_bias_era5
+    d['angle_bias']=angle_bias
+    d['angle_bias_era5']=angle_bias_era5
+    d['N']=n_points
+    
+    return d
  
            
     
@@ -98,18 +140,20 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
 
     
     for thresh in THRESHOLDS:
-        param.set_thresh(thresh)
+        param.set_thresh(thresh)7
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
         n_points=df[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
         df_pressure= pressure_df(df_unit)
-        
+        means=
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
         ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
     if (rmsvd_label=='rmsvd'):
-        ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')    
-   
+        ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')  
+        
     ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
+    ax.text(0.6, 0.25,'μ = '+ str(round(means(rmsvd_label)), 2))
+
     ax.set_xlabel(xlabel)
     ax.set_ylabel('Pressure [hPa]')
     ax.set_xlim(xlim[0],xlim[1])
@@ -247,16 +291,12 @@ def preprocess(df):
     df=df[df.u_wind>-1000]
     udiff=df.u-df.u_wind
     vdiff=df.v-df.v_wind
-    #udiff=df.u_era5-df.u_wind
-    #vdiff=df.v_era5-df.v_wind
     df['u_error']= udiff
     df['v_error']= vdiff
     df['speed']=np.sqrt(df.u**2+df.v**2)
     df['speed_era5']=np.sqrt(df.u_era5**2+df.v_era5**2)
     df['speed_wind']=np.sqrt(df.u_wind**2+df.v_wind**2)
-    #df['speed_error']=df.speed-df.speed_wind
     df['speed_error']=df.speed-df.speed_era5
-    #df['speed_error_norad']=df.speed-df.speed_era5
 
     df['speed_error_era5']=df.speed_era5-df.speed_wind
     df['u_error_era5']=df.u_era5-df.u_wind
@@ -269,7 +309,6 @@ def preprocess(df):
     df=angle(df, 'u_era5','v_era5','signed_angle_era5')
     df['angle']=abs(df['signed_angle'])
     df['angle_era5']=abs(df['signed_angle_era5'])
-   # df=df[df.speed>3]
 
 
     return df
