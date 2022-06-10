@@ -84,10 +84,8 @@ def pressure_df(df):
 
 
 
-def means(df):
-    plevs=df['plev'].unique()
+def means_d(df_unit):
     d={}
-    
     n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
 
     rmsvd=np.sqrt(df_unit['error_square'].mean())
@@ -106,7 +104,6 @@ def means(df):
 
 
     rmsvd_era5=np.sqrt(df_unit['error_square_era5'].mean())
-    d['plev']=plev
     d['rmsvd']=rmsvd
     d['rmsvd_era5']=rmsvd_era5
     d['u_error']=u_error
@@ -140,19 +137,20 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
 
     
     for thresh in THRESHOLDS:
-        param.set_thresh(thresh)7
+        param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
         n_points=df[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
         df_pressure= pressure_df(df_unit)
-        means=
+        means=means_d(df_unit)
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
         ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
     if (rmsvd_label=='rmsvd'):
         ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')  
         
     ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
-    ax.text(0.6, 0.25,'μ = '+ str(round(means(rmsvd_label)), 2))
+    mean_string=str(round(means[rmsvd_label],2))
+    ax.text(0.6, 0.25,'μ = '+ mean_string,transform=ax.transAxes)
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel('Pressure [hPa]')
@@ -325,7 +323,7 @@ def main(param):
                      xlabel2='Angle bias [deg]', xlim1=(-5,5), xlim2=(-20,20))
     four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
                      xlabel1='u bias [m/s]', 
-                     xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
+                     xlabel2='v bias [m/s]', xlim1=(-5,5), xlim2=(-5,5))
 
     n_points_plot(param)
     
