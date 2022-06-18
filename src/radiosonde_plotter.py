@@ -132,6 +132,7 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
     
     df=df.drop_duplicates()
     df_pressure_era= pressure_df(df)
+    df_pressure_era.round(2).to_csv('../data/processed/df_pressure_era_'+param.tag+'.csv')
 
 
 
@@ -142,11 +143,17 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         df_unit=preprocess(df_unit)
         n_points=df[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
         df_pressure= pressure_df(df_unit)
+        df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')
         means=means_d(df_unit)
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
         ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
     if (rmsvd_label=='rmsvd'):
         ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')  
+    if (rmsvd_label=='speed_bias'):
+        ax.axvspan(-1.79, 1.79, alpha=0.25, color='grey') 
+    if (rmsvd_label=='angle_bias'):
+        ax.axvspan(-14.61, 14.61, alpha=0.25, color='grey')  
+    
         
     ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
     mean_string=str(round(means[rmsvd_label],2))
@@ -319,7 +326,7 @@ def main(param):
                      xlabel1='u bias [m/s]', 
                      xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
     four_panel_plot('bias', param, var1='speed_bias', var2='angle_bias', 
-                     xlabel1='Bias [m/s]', 
+                     xlabel1='Speed bias [m/s]', 
                      xlabel2='Angle bias [deg]', xlim1=(-5,5), xlim2=(-20,20))
     four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
                      xlabel1='u bias [m/s]', 
