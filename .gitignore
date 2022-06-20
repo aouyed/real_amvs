@@ -4,10 +4,4 @@
 *.png
 *.gz
 *.pkl
-cross_section.py
-quiver.py
-plotter.py
-plotting.py
-stats_calculators.py
-stats_pressurer.py
-stats.py
+
