@@ -141,6 +141,7 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
+        breakpoint()
         n_points=df[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
         df_pressure= pressure_df(df_unit)
         df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')

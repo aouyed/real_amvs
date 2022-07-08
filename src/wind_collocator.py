@@ -114,19 +114,20 @@ def main(param):
     df=pd.read_pickle('../data/interim/dataframes/'+ param.tag +'_igra_id.pkl')
     df=df.reset_index(drop=True)
     print(df)
+    breakpoint()
     collocated_winds(df,param)
 
 
 
 if __name__ == '__main__':
     param=parameters()
-    param.set_alg('rand')
+    param.set_alg('tvl1')
     param.set_month(datetime(2020,1,1))
 
     main(param)
     
     param=parameters()
-    param.set_alg('rand')
+    param.set_alg('tvl1')
     param.set_month(datetime(2020,7,1))
 
     main(param)

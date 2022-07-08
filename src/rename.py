@@ -10,11 +10,11 @@ import os
 import glob
 from tqdm import tqdm
 
-files=glob.glob('../data/processed/dataframes/july_winds_rs_model_coarse_july*')
+files=glob.glob('../data/interim/dataframes/coarse_*')
 
 for file in tqdm(files):
     dirstring=os.path.dirname(os.path.realpath(file))
     base=os.path.basename(file) 
-    new_file=os.path.join(dirstring, base[:20]+'tvl1_'+ base[20:])
+    new_file=os.path.join(dirstring, 'tvl1_'+ base)
     old_file=os.path.join(dirstring, base)
     os.rename(old_file, new_file)
