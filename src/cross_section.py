@@ -12,7 +12,6 @@ import numpy as np
 from metpy.interpolate import cross_section
 import metpy.calc as mpcalc
 from metpy.units import units
-import plotter 
 import quiver 
 import cartopy.crs as ccrs
 from datetime import datetime 
@@ -166,10 +165,12 @@ def four_panel_quiver_map(ds, title, thresh, pressures):
             ds_unit=ds.sel(plev=pressure, method='nearest')
             plev_string=ds_unit['plev'].values.item()
             plev_string=str(round(plev_string,1))
+            ds_unit=ds_unit.drop('plev')
 
             if tag == '':
                 
                 ds_unit=ds.sel(plev=pressure, method='nearest')
+                ds_unit=ds_unit.drop('plev')
                 title_tag=plev_string +' hPa'
             else: 
                 title_tag='ERA 5'
@@ -244,12 +245,11 @@ def main(param):
         #time='am0'
 
         param.set_thresh(thresh)
-        file_name= param.month.strftime('../data/processed/'+param.tag+'_%m_%d_%Y')+'_'+time+'.nc'
+        file_name= '../data/processed/'+param.tag+'.nc'
         ds=xr.open_dataset(file_name)        
         date=param.month
-        #time='am'
-
         ds=ds.loc[{'day':date,'time':time,'satellite':'snpp'}].squeeze()
+        ds=ds.drop(['day','time','satellite'])
         ds['humidity_overlap']=scale_g*ds['humidity_overlap']
         #time='am0'
 
@@ -258,14 +258,15 @@ def main(param):
         ds=ds.drop('obs_time')
 
         cross_sequence(ds, thresh, time)
-        four_panel_quiver_map(ds, param.month_string+'_quiver_'+time+'_p1'+str(thresh),str( thresh),[850,700])    
-        four_panel_quiver_map(ds, param.month_string+'_quiver_'+time+'_p2'+str(thresh),str( thresh),[500,400])    
+        four_panel_quiver_map(ds, 'quiver_p1_'+param.tag,str( thresh),[850,700])    
+        four_panel_quiver_map(ds, 'quiver_p2_'+param.tag,str( thresh),[500,400])    
         
 
    
     
 if __name__=="__main__":
     param=parameters()
+    param.set_alg('tvl1')
     param.set_month(datetime(2020,7,1))
     main(param)
     

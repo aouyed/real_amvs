@@ -70,10 +70,11 @@ def collocated_winds(df, param):
             df_rs=df_rs.loc[df_rs['date']==date]
             if not df_rs.empty:
                 for orbit in ('am','pm'):
-                    ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
+                    ds_path='../data/processed/'+tag+'.nc'
                     dsdate = obs_time.strftime('%m_%d_%Y')
                     ds=xr.open_dataset(ds_path)
-                    ds=ds.sel(satellite='snpp')
+                    ds=ds.sel(satellite='snpp', time=orbit)
+                    ds=ds.sel(day=obs_time, method='nearest')
                     ds=ds.squeeze()
                     
                     ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
@@ -119,4 +120,13 @@ def main(param):
 
 if __name__ == '__main__':
     param=parameters()
+    param.set_alg('rand')
+    param.set_month(datetime(2020,1,1))
+
+    main(param)
+    
+    param=parameters()
+    param.set_alg('rand')
+    param.set_month(datetime(2020,7,1))
+
     main(param)

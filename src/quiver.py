@@ -14,7 +14,7 @@ from datetime import datetime
 import cartopy.crs as ccrs
 import matplotlib.ticker as mticker
 from scipy import fftpack, ndimage
-import plotter
+from parameters import parameters 
 
 
 def quiver_plot(ds, title, u, v):
@@ -112,7 +112,7 @@ def compute(ds):
 def main():
     
     three_panels('three_panel')
-
+    ds=xr.open_dataset()
 if __name__ == '__main__':
     main()
 

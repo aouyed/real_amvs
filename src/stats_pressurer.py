@@ -11,8 +11,6 @@ import numpy as np
 import pandas as pd
 import stats_calculators as sc
 import glob
-import cross_section as cs
-import plotter 
 from natsort import natsorted
 from matplotlib.pyplot import cm
 import config as c
@@ -21,19 +19,22 @@ import amv_calculators as ac
 from datetime import timedelta 
 from parameters import parameters
 from datetime import datetime
+import histograms 
 
 THRESHOLDS=[4,10,100]
 def calc_days(thresh, days, tag):
 
-    
+    ds_total = xr.open_dataset('../data/processed/'+tag+'.nc')
+    ds_total=histograms.compute(ds_total)
+    error_square_mean=sc.weighted_mean(ds_total['error_square'])
+    rmsvd=np.sqrt(error_square_mean)
+
     for day in tqdm(days):
         for time in ('am','pm'):
             d={'pressure':[],'error_sum':[],'speed_sum':[],
                'denominator':[],'angle_sum':[],'angle_denominator':[],'yield':[]}
             file_name= day.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+time+'.nc'
-            ds=xr.open_dataset(file_name)
-            ds=ds.loc[{'satellite':'snpp'}]
-            ds=plotter.compute(ds)  
+            ds=ds_total.sel(satellite='snpp',day=day, time=time)
             ds['angle']=abs(ds['angle'])
             for pressure in ds['plev'].values:
                 ds_unit=ds.sel(plev=pressure, method='nearest')
@@ -58,7 +59,7 @@ def calc_days(thresh, days, tag):
             df=pd.DataFrame(data=d)
             df.set_index('pressure', drop=True)
             df.to_csv('../data/interim/dataframes/t'+str(thresh)+'_'+day.strftime('%m_%d_%Y_') + time + tag +'.csv')
-    return df['pressure'].values
+    return df['pressure'].values, rmsvd 
 
 
 def calc_means(thresh, days, tag):
@@ -66,7 +67,7 @@ def calc_means(thresh, days, tag):
     file_name= day.strftime('../data/processed/'+tag+'.nc')
     ds=xr.open_dataset(file_name)
     ds=ds.loc[{'satellite':'snpp'}]
-    ds=plotter.compute(ds)  
+    ds=histograms.compute(ds)  
     ds['angle']=abs(ds['angle'])
             
     error_sum=sc.weighted_sum(ds_unit['error_square'])
@@ -176,7 +177,7 @@ def line_plotter(func, ax, month,param):
     return ax
     
     
-def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  param):
+def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  param, rmsvds):
     fig, axes = plt.subplots(nrows=1, ncols=3)
     axlist = axes.flat
     axlist[0]=line_plotter(plot_rmsvd, axlist[0], month, param)
@@ -188,8 +189,13 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
     axlist[0].legend(frameon=False)
 
     axlist[0].text(0.5,0.5,tag[0], transform=axlist[0].transAxes)
+    axlist[0].text(0.0,0.25,'RMSVD= ' + str(round(rmsvds['10'],2)), transform=axlist[0].transAxes)
     axlist[1].text(0.5,0.5,tag[1], transform=axlist[1].transAxes)
     axlist[2].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
+    param.set_thresh(10)
+    df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t10'+param.tag+'.csv')
+    total_yield=df['yield'].sum()/1000
+    axlist[2].text(0.0,0.25,'total yield= ' + str(round(total_yield,2)), transform=axlist[2].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag +'_'+title +
@@ -202,26 +208,30 @@ def threshold_fun(param):
     start_date=param.month
     end_date=start_date + timedelta(days=6)
     days=ac.daterange(start_date, end_date, 24)
+    rmsvds={}
     
     for thresh in THRESHOLDS:
         param.set_thresh(thresh)
         tag=param.tag
-        pressures=calc_days(thresh,  days, tag)
+        pressures,rmsvd=calc_days(thresh,  days, tag)
+        rmsvds[str(thresh)]=rmsvd
         calc_pressure(pressures,thresh, days, tag, param)
+    return rmsvds
     
 def main(param):
     param.set_month(datetime(2020,1,1))
-    threshold_fun(param)
-    multiple_lineplots(['(a)','(b)','(c)'],'january','january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param)
+    rmsvds=threshold_fun(param)
+    multiple_lineplots(['(a)','(b)','(c)'],'january','january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param, rmsvds)
     param.set_month(datetime(2020,7,1))
-    threshold_fun(param)
-    multiple_lineplots(['(d)','(e)','(f)'],'july','july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param)
+    rmsvds=threshold_fun(param)
+    multiple_lineplots(['(d)','(e)','(f)'],'july','july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
 
 
 
 if __name__ == '__main__':
     param=parameters()
     param.set_plev_coarse(5) 
+    param.set_alg('rand')
     main(param)
     
 

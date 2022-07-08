@@ -9,9 +9,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 import pandas as pd
-import stats
 import glob
-import cross_section as cs
 from natsort import natsorted
 
 def line_plotter(df0, values, title):
@@ -49,7 +47,7 @@ def weighted_mean(da):
     
 
     da_weighted=da.weighted(weights)
-    w_mean=da_weighted.mean(('longitude','latitude'), skipna=True)
+    w_mean=da_weighted.mean(list(da.coords), skipna=True)
     return w_mean.item()
 
 
@@ -116,87 +114,6 @@ def rmse_calc(ds, thresh):
     print(df)
     return df
 
-def calc_week(thresh):
-    for pressure in cs.PRESSURES:
-        print(pressure)
-        rmse_dict={'edges':[],'rmse':[],'shear':[],'shear_era5':[]}
-        edges=[[-30,30],[30,70],[-70,-30]]
-        file_names=natsorted(glob.glob('../data/processed/07*20*.nc'))
-    
-        for edge in edges:
-            print(edge)
-            sums={'error':0, 'shear':0, 'shear_era5':0,'denominator':0,'shear_d':0}
-            for file_name in file_names:
-                print(file_name)
-                ds=xr.open_dataset(file_name)
-                ds_unit=ds.sel(latitude=slice(edge[1],edge[0]))
-                ds_unit=ds_unit.loc[{'satellite':'snpp'}]
-                ds_unit=cs.preprocess(ds_unit, thresh)
-                shear=cs.shear_two_levels(ds_unit)
-                shear_era5=cs.shear_two_levels(ds_unit,'_era5')
-
-                sums['shear']= sums['shear']+ weighted_sum(shear)
-                sums['shear_era5']= sums['shear_era5']+ weighted_sum(shear_era5)
-                sums['shear_d']= sums['shear_d']+ weights_sum(shear_era5)
-                ds_unit=ds_unit.sel(plev=pressure, method='nearest')
-              
-                sums['error']= sums['error']+ weighted_sum(ds_unit['error_mag'])
-                sums['denominator']= sums['denominator']+ weights_sum(ds_unit['error_mag'])
-           
-            rmse_dict['edges'].append(str(edge[0])+','+str(edge[1]))
-            rmse_dict['rmse'].append(np.sqrt(sums['error']/sums['denominator']))
-            rmse_dict['shear'].append(sums['shear']/sums['shear_d'])
-            rmse_dict['shear_era5'].append(sums['shear_era5']/sums['shear_d'])
-        df=pd.DataFrame(data=rmse_dict)
-        df.to_csv('../data/interim/dataframes/t'+str(thresh)+'_'+str(pressure) + '.csv')
-        print(df)
-    return df
-        
-
-def hist2d(ds, title, label, xedges, yedges):
-    print('2dhistogramming..')
-
-    bins = stats.BINS
-    xbins = np.linspace(xedges[0], xedges[1], bins+1)
-    ybins = np.linspace(yedges[0], yedges[1], bins+1)
-    df = ds.to_dataframe().reset_index().dropna()
-    df = df[label]
-    df = df.astype(np.float32)
-    
-    img, x_edges, y_edges = np.histogram2d(df[label[0]].values, df[label[1]].values, bins=[
-                               xbins, ybins])
-    img=img.T
-    extent = [x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]]
-    fig, ax = plt.subplots()
-
-    im = ax.imshow(img, origin='lower',
-                   cmap='CMRmap_r', aspect='auto', extent=extent)
-
-    cbar = fig.colorbar(im, ax=ax, fraction=0.025, pad=0.04)
-    plt.xlabel(label[0])
-    plt.ylabel(label[1])
-    plt.tight_layout()
-    plt.show()
-    plt.savefig('../data/processed/plots/hist2d_'+title+'.png',
-                bbox_inches='tight', dpi=300)
-    plt.close()
-    
-def scatter2d(ds, title, label, xedges, yedges):
-    print('scattering...')
-    fig, ax = plt.subplots()
-    df=ds.to_dataframe().reset_index().dropna()
-    df=df[label]
-    print(df.shape)
-    X=df[label[0]]
-    Y=df[label[1]]
-    ax.scatter(X,Y, marker = 'o', facecolors='none', edgecolors='r')
-    plt.xlabel(label[0])
-    plt.ylabel(label[1])
-    #plt.ylim(yedges)
-    plt.show()
-    plt.savefig(title+'_scatter2d.png', dpi=300)
-    plt.close()
-    
     
 def coord_to_string(coord):
     if coord[1] < 0:

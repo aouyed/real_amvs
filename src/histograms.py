@@ -261,7 +261,7 @@ def four_panel_histogram(param, label, plev):
     #axlist[0].legend(bbox_to_anchor=(1.05, 0), loc='lower left', borderaxespad=0.)
     axlist[0].legend(bbox_to_anchor=(0, 1.07),loc='lower left')
     fig.tight_layout() 
-    plt.savefig('../data/processed/plots/hist_' + label +'_'+str(plev)+'.png', dpi=300)
+    plt.savefig('../data/processed/plots/hist_' + label +'_'+str(plev)+ param.tag + '.png', dpi=300)
     plt.show()
     plt.close()
 
@@ -275,14 +275,14 @@ def three_panel_histogram(param, label, plev):
     #axlist[0].legend(bbox_to_anchor=(1.05, 0), loc='lower left', borderaxespad=0.)
     axlist[0].legend(bbox_to_anchor=(0, 1.07),loc='lower left')
     fig.tight_layout() 
-    plt.savefig('../data/processed/plots/hist_values' + label +'_'+str(plev)+'.png', dpi=300)
+    plt.savefig('../data/processed/plots/hist_values_' + label +'_'+str(plev)+ param.tag + '.png', dpi=300)
     plt.show()
     plt.close()
       
             
 
 def histograms(param):    
-    for plev in (0, 850, 700, 500, 400):
+    for plev in [0]:
         
         param.set_month(datetime(2020,1,1))
         four_panel_histogram(param, 'jan_four_panel',plev)  
@@ -296,7 +296,6 @@ def histograms(param):
 
 
 def main(param):
-  
   histograms(param)
   #error_maps()
   #patch_plotter()
@@ -309,5 +308,6 @@ if __name__=="__main__":
     param= parameters()
     #param.set_alg('farneback')
     param.set_plev_coarse(5)
+    param.set_alg('rand')    
     main(param)
     

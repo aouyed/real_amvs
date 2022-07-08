@@ -157,7 +157,10 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         
     ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
     mean_string=str(round(means[rmsvd_label],2))
-    ax.text(0.6, 0.25,'μ = '+ mean_string,transform=ax.transAxes)
+    if rmsvd_label=='rmsvd':
+        ax.text(0.5, 0.25,'RMSVD = '+ mean_string,transform=ax.transAxes)
+    else:
+        ax.text(0.7, 0.25,'μ = '+ mean_string,transform=ax.transAxes)
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel('Pressure [hPa]')
@@ -199,13 +202,13 @@ def location_loader(param):
     
 def four_panel_plot(fname, param, var1='rmsvd', var2='angle', 
                      xlabel1='RMSVD [m/s]', 
-                     xlabel2='Angle [deg]',xlim1=(0,12), xlim2=(10,60)):
+                     xlabel2='Angle [deg]',xlim1=(0,15), xlim2=(10,60)):
     fig, axes = plt.subplots(nrows=2, ncols=2)
     axlist = axes.flat
     
     two_radiosonde_panels(axlist[:2],var1,xlabel1,xlim1,param)
     two_radiosonde_panels(axlist[2:], var2,xlabel2,xlim2,param)
-    axlist[0].legend(frameon=False)
+    axlist[0].legend(frameon=False, loc='upper left')
     
     axlist[0].text(0.05,0.05,'(a)',transform=axlist[0].transAxes)
     axlist[1].text(0.05,0.05,'(b)',transform=axlist[1].transAxes)

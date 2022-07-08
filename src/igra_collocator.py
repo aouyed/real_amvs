@@ -40,8 +40,8 @@ def space_time_collocator(days, deltat, param):
         print(day)
         for time in ('am','pm'):
             dsdate = day.strftime('%m_%d_%Y')
-            ds = xr.open_dataset('../data/processed/'+param.tag+'_'+ dsdate+'_'+time+'.nc')
-            ds-ds.sel(satellite='snpp')
+            ds = xr.open_dataset('../data/processed/'+param.tag+'.nc')
+            ds=ds.sel(satellite='snpp',day=day, time=time)
             df_unit=ds[['obs_time','u']].to_dataframe()
             df_unit=df_unit.reset_index()
             df_unit=df_unit[['latitude','longitude','obs_time','u']]
@@ -156,4 +156,10 @@ def main(param):
 
 if __name__ == '__main__':
     param=parameters()
+    param.set_month(datetime(2020,1,1))
+    param.set_alg('rand')
+    main(param)
+    param=parameters()
+    param.set_month(datetime(2020,7,1))
+    param.set_alg('rand')
     main(param)
