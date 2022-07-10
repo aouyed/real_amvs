@@ -33,11 +33,12 @@ def pressure_df(df):
     d={'plev':[],'rmsvd':[],'rmsvd_era5':[],'u_error':[], 'v_error':[],
        'u_error_era5':[], 'v_error_era5':[], 'angle':[], 
        'angle_era5':[],'angle_bias':[],'angle_bias_era5':[],
-       'speed_bias':[],'speed_bias_era5':[],'N':[]}
+       'speed_bias':[],'speed_rmse':[],'speed_bias_era5':[],'speed_rmse_era5':[],'N':[]}
     for plev in plevs:
         
         df_unit=df[df.plev==plev]
         n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+        #n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
 
         rmsvd=np.sqrt(df_unit['error_square'].mean())
         u_error=df_unit['u_error'].mean()
@@ -51,6 +52,9 @@ def pressure_df(df):
         angle_bias=df_unit['signed_angle'].mean()
         angle_bias_era5=df_unit['signed_angle_era5'].mean()
         speed_bias=df_unit['speed_error'].mean()
+        speed_rmse=np.sqrt((df_unit['speed_error']**2).mean())
+        speed_rmse_era5=np.sqrt((df_unit['speed_error_era5']**2).mean())
+
         speed_bias_era5=df_unit['speed_error_era5'].mean()
 
 
@@ -70,6 +74,10 @@ def pressure_df(df):
         
         d['speed_bias'].append(speed_bias)
         d['speed_bias_era5'].append(speed_bias_era5)
+        
+        d['speed_rmse'].append(speed_rmse)
+        d['speed_rmse_era5'].append(speed_rmse_era5)
+      
         
         d['angle_bias'].append(angle_bias)
         d['angle_bias_era5'].append(angle_bias_era5)
@@ -141,11 +149,12 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
-        breakpoint()
-        n_points=df[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+        #n_points=df[['lat_rs','lon_rs','stationid','date']].drop_duplicates().dropna().shape[0]
+        n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+
         df_pressure= pressure_df(df_unit)
         df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')
-        means=means_d(df_unit)
+        means=df_pressure[rmsvd_label].mean()
         ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
         ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
     if (rmsvd_label=='rmsvd'):
@@ -157,7 +166,7 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
     
         
     ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
-    mean_string=str(round(means[rmsvd_label],2))
+    mean_string=str(round(means,2))
     if rmsvd_label=='rmsvd':
         ax.text(0.5, 0.25,'RMSVD = '+ mean_string,transform=ax.transAxes)
     else:
@@ -223,6 +232,9 @@ def four_panel_plot(fname, param, var1='rmsvd', var2='angle',
     plt.close()
 
 
+    
+    
+    
 def n_points_plot(param):
    
     
@@ -259,9 +271,10 @@ def n_points_plot(param):
 def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     param.set_month(datetime(2020,1,1))
     axlist[0]=pressure_ax(axlist[0],param, label,xlabel, xlim)
-    param.set_month(datetime(2020,7,1))
+    param.set_month(datetime(2020,1,1))
     axlist[1]=pressure_ax(axlist[1], param, label, xlabel, xlim)
-  
+    
+
 def location_plot(fname, param):
     fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
@@ -305,8 +318,8 @@ def preprocess(df):
     df['speed']=np.sqrt(df.u**2+df.v**2)
     df['speed_era5']=np.sqrt(df.u_era5**2+df.v_era5**2)
     df['speed_wind']=np.sqrt(df.u_wind**2+df.v_wind**2)
-    df['speed_error']=df.speed-df.speed_era5
-
+    df['speed_error']=df.speed-df.speed_wind
+    
     df['speed_error_era5']=df.speed_era5-df.speed_wind
     df['u_error_era5']=df.u_era5-df.u_wind
     df['v_error_era5']=df.v_era5-df.v_wind
@@ -323,8 +336,29 @@ def preprocess(df):
     return df
 
 
+
+def two_panel_plot(fname, param, var1='speed_rmse', 
+                     xlabel1='RMSE [m/s]', xlim1=(0,15)):
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+    axlist = axes.flat
+    
+    two_radiosonde_panels(axlist[:2],var1,xlabel1,xlim1,param)
+    axlist[0].legend(frameon=False, loc='upper left')
+    
+   
+
+    fig.tight_layout()
+    plt.savefig('../data/processed/plots/'+param.tag+fname +
+                '.png', bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()
+
+    
 def main(param):
-    four_panel_plot('rmsvd_angle', param)
+    two_panel_plot('speed_rmse', param)
+    
+    four_panel_plot('rmsvd_bias', param, var1='rmsvd',var2='speed_bias',
+                    xlabel1='RMSVD [m/s]', xlabel2='Speed bias [m/s]',xlim2=(-5,5))
     
     four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
                      xlabel1='u bias [m/s]', 
@@ -344,7 +378,7 @@ def main(param):
 
 if __name__=='__main__':
     param=parameters()
-    param.set_alg('tvl1')
+    param.set_alg('farneback')
     param.set_month(datetime(2020,1,1))
     param.set_plev_coarse(5)
     main(param)

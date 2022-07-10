@@ -15,6 +15,7 @@ import era5_downloader as ed
 from datetime import datetime 
 import config as c
 from tqdm import tqdm
+from parameters import parameters 
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -37,13 +38,14 @@ swath_hours=24
 
 LABEL='specific_humidity_mean'
 
-def ds_closer(date,ds,time):
+def ds_closer(date,ds,time, param):
     date = pd.to_datetime(str(date)) 
     year = date.strftime('%Y')
     month = date.strftime('%m')
     day  = date.strftime('%d')
     print(ds)
-    ds.to_netcdf('../data/processed/full_nn_tlv1_'+month+'_'+day+'_'+year+'_'+time+'.nc')
+    ds.to_netcdf('../data/processed/'+param.alg+'_'
+                 +'lambda_'+str(param.Lambda)+'_'+month+'_'+day+'_'+year+'_'+time+'.nc')
  
 def model_closer(date):
     date = pd.to_datetime(str(date)) 
@@ -70,7 +72,7 @@ def model_loader(date, pressure):
     return ds_model
     
     
-def ds_unit_calc(ds, day,pressure, time):
+def ds_unit_calc(ds, day,pressure, time, param):
     ds=ds.loc[{'day':day ,'plev':pressure,'time':time}]
     ds=ds.drop(['day','plev','time'])
     ds=calc.prepare_ds(ds)
@@ -85,7 +87,7 @@ def ds_unit_calc(ds, day,pressure, time):
         ds_merged, ds_snpp, ds_j1, df_snpp=calc.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
    
         if (df_snpp.shape[0]>100):
-            df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df)
+            df, ds_snpp_p,ds_j1_p, ds_model_p=calc.amv_calculator(ds_merged, df,param)
                      
     ds=xr.Dataset.from_dataframe(df)
    
@@ -94,14 +96,14 @@ def ds_unit_calc(ds, day,pressure, time):
     
 
 
-def serial_loop(ds):
-    for day in tqdm(ds['day'].values):
+def serial_loop(ds,param):
+    for day in tqdm(param.dates):
         print(day)
         #ed.downloader(day)
-        for time in ds['time'].values: 
+        for time in [ds['time'].values[0]]: 
             ds_total=xr.Dataset()
             for pressure in tqdm(ds['plev'].values):
-                ds_unit = ds_unit_calc(ds, day,pressure, time)
+                ds_unit = ds_unit_calc(ds, day,pressure, time,param)
                 ds_unit = ds_unit.expand_dims('day').assign_coords(day=np.array([day]))
                 ds_unit = ds_unit.expand_dims('time').assign_coords(time=np.array([time]))
                 ds_unit = ds_unit.expand_dims('plev').assign_coords(plev=np.array([pressure]))
@@ -111,23 +113,30 @@ def serial_loop(ds):
                 else:
                     ds_total=xr.concat([ds_total,ds_unit],'plev')
                 
-            ds_closer(day,ds_total,time)
+            ds_closer(day,ds_total,time, param)
         #model_closer(day)
 
 
         
-def main():
+def main(param):
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_'+ month_string +'.nc')
     #ds=ds.sel(plev=[850,700,500,400], method='nearest')    
     print(ds)
     #ds=xr.open_dataset('../data/processed/jan_28_climcaps.nc')
     #ds=ds.sel(plev=ds['plev'].values[-1:])
-    serial_loop(ds)
+    serial_loop(ds, param)
     
    
 
 if __name__ == '__main__':
+    param= parameters()
+    #param.set_alg('farneback')
+    param.set_plev_coarse(5)
+    param.set_alg('tvl1')   
+    param.set_Lambda(0.3)
+    param.set_timedelta(0)
+    print(param.Lambda)
     start_time = time.time()
-    main()
+    main(param)
     print("--- %s seconds ---" % (time.time() - start_time))
 

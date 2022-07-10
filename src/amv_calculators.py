@@ -62,7 +62,7 @@ def daterange(start_date, end_date, dhour):
 
 
 
-def calc(frame0, frame):
+def calc(frame0, frame, param):
     if frame0.shape != frame.shape:
         frame=np.resize(frame, frame0.shape)
     
@@ -73,6 +73,7 @@ def calc(frame0, frame):
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     
     optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
+    optical_flow.setLambda(param.Lambda)
     #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
     flowd = optical_flow.calc(nframe0, nframe, None)
     flowx=flowd[:,:,0]
@@ -160,10 +161,10 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
     
     return ds_merged, ds_snpp, ds_j1, df_snpp
 
-def flow_calculator(ds_snpp, ds_j1, ds_merged):
+def flow_calculator(ds_snpp, ds_j1, ds_merged, param):
     frame0=frame_retreiver_ns(ds_j1)
     frame=frame_retreiver_ns(ds_snpp)
-    flowx,flowy=calc(frame0, frame)
+    flowx,flowy=calc(frame0, frame, param)
     flowx = np.expand_dims(flowx, axis=2)
     flowy = np.expand_dims(flowy, axis=2)
     ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)
@@ -207,10 +208,10 @@ def df_filler_model(df, df_sat, df_m):
     return df
     
 
-def amv_calculator(ds_merged, df):
+def amv_calculator(ds_merged, df, param):
     ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
     ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
-    ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged)
+    ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged, param)
     df_j1=ds_j1.to_dataframe()
     df_snpp=ds_snpp.to_dataframe()
     df_model=ds_merged.loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
