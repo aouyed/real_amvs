@@ -10,11 +10,11 @@ from parameters import parameters
 import datetime 
 import pandas as pd
 import xarray as xr 
+
 def main(param):
     
-    start=param.month
-    end=start + datetime.timedelta(days=6)
-    dates=pd.date_range(start=start, end=end, freq='d')
+
+    dates=param.dates
     ds_total=xr.Dataset()
     for day in dates:
             print(day)

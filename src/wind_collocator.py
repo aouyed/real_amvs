@@ -114,7 +114,6 @@ def main(param):
     df=pd.read_pickle('../data/interim/dataframes/'+ param.tag +'_igra_id.pkl')
     df=df.reset_index(drop=True)
     print(df)
-    breakpoint()
     collocated_winds(df,param)
 
 

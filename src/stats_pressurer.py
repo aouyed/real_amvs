@@ -21,7 +21,7 @@ from parameters import parameters
 from datetime import datetime
 import histograms 
 
-THRESHOLDS=[4,10,100]
+THRESHOLDS=[100]
 def calc_days(thresh, days, tag):
 
     ds_total = xr.open_dataset('../data/processed/'+tag+'.nc')
@@ -189,7 +189,7 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
     axlist[0].legend(frameon=False)
 
     axlist[0].text(0.5,0.5,tag[0], transform=axlist[0].transAxes)
-    axlist[0].text(0.0,0.25,'RMSVD= ' + str(round(rmsvds['10'],2)), transform=axlist[0].transAxes)
+    axlist[0].text(0.0,0.25,'RMSVD= ' + str(round(rmsvds['100'],2)), transform=axlist[0].transAxes)
     axlist[1].text(0.5,0.5,tag[1], transform=axlist[1].transAxes)
     axlist[2].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
     param.set_thresh(10)
@@ -205,9 +205,8 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
     
     
 def threshold_fun(param):
-    start_date=param.month
-    end_date=start_date + timedelta(days=6)
-    days=ac.daterange(start_date, end_date, 24)
+
+    days=param.dates
     rmsvds={}
     
     for thresh in THRESHOLDS:
@@ -222,16 +221,18 @@ def main(param):
     param.set_month(datetime(2020,1,1))
     rmsvds=threshold_fun(param)
     multiple_lineplots(['(a)','(b)','(c)'],'january','january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param, rmsvds)
-    param.set_month(datetime(2020,7,1))
-    rmsvds=threshold_fun(param)
-    multiple_lineplots(['(d)','(e)','(f)'],'july','july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
+    #param.set_month(datetime(2020,7,1))
+    #rmsvds=threshold_fun(param)
+    #multiple_lineplots(['(d)','(e)','(f)'],'july','july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
 
 
 
 if __name__ == '__main__':
     param=parameters()
     param.set_plev_coarse(5) 
-    param.set_alg('rand')
+    param.set_alg('tvl1')
+    param.set_timedelta(0)
+    param.set_Lambda(0.3)
     main(param)
     
 

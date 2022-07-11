@@ -35,9 +35,7 @@ def vertical_coarse(ds, thresh, n_layers):
 
 
 def main(param):
-    start=param.month
-    end=start + datetime.timedelta(days=6)
-    dates=pd.date_range(start=start, end=end, freq='d')
+    dates=param.dates 
 
     for date in tqdm(dates): 
         date_string=date.strftime('%m_%d_%Y')

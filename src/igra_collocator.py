@@ -140,8 +140,7 @@ def igra_downloader(df,days, month_string):
 def main(param):
     deltat=timedelta(hours=HOURS)
     start_date=param.month
-    end_date=start_date + timedelta(days=6)
-    days=ac.daterange(start_date, end_date, 24)
+    days=param.dates
     month_string=param.month_string
     df=space_time_collocator(days, deltat, param)
     df=df.reset_index(drop=True)

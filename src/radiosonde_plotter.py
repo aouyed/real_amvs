@@ -244,7 +244,7 @@ def n_points_plot(param):
      df_jan=preprocess(df_jan)
      df_pressure_jan= pressure_df(df_jan)
      
-     param.set_month(datetime(2020,7,1))
+     param.set_month(datetime(2020,1,1))
      df_july=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+ param.tag +'.pkl')
      df_july=preprocess(df_july)
      df_pressure_july= pressure_df(df_july)
@@ -378,7 +378,9 @@ def main(param):
 
 if __name__=='__main__':
     param=parameters()
-    param.set_alg('farneback')
+    param.set_alg('tvl1')
+    param.set_Lambda(0.15)
     param.set_month(datetime(2020,1,1))
+    param.set_timedelta(0)
     param.set_plev_coarse(5)
     main(param)
