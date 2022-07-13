@@ -241,7 +241,7 @@ def cross_sequence(ds, thresh, time):
 def main(param):
     time='pm'
     dsdate=param.month.strftime('%m_%d_%Y')
-    for thresh in [10,4]:
+    for thresh in [10]:
         #time='am0'
 
         param.set_thresh(thresh)
@@ -267,6 +267,7 @@ def main(param):
 if __name__=="__main__":
     param=parameters()
     param.set_alg('tvl1')
-    param.set_month(datetime(2020,7,1))
+    param.set_Lambda(0.15)
+    param.set_month(datetime(2020,1,1))
     main(param)
     

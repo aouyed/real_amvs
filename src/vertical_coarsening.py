@@ -18,7 +18,7 @@ def compute(ds, thresh):
     u_error=ds['u']-ds['u_era5']
     v_error=ds['v']-ds['v_era5']
     ds['error_mag']=np.sqrt(u_error**2+v_error**2)
-    #ds=ds.where(ds.error_mag < thresh)
+    ds=ds.where(ds.error_mag < thresh)
     ds=ds.drop('error_mag')
     return ds
 

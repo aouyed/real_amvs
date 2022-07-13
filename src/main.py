@@ -100,7 +100,7 @@ def serial_loop(ds,param):
     for day in tqdm(param.dates):
         print(day)
         #ed.downloader(day)
-        for time in [ds['time'].values[1]]: 
+        for time in ds['time'].values: 
             ds_total=xr.Dataset()
             for pressure in tqdm(ds['plev'].values):
                 ds_unit = ds_unit_calc(ds, day,pressure, time,param)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     param.set_plev_coarse(5)
     param.set_alg('tvl1')   
     param.set_Lambda(0.15)
-    param.set_timedelta(0)
+    param.set_timedelta(6)
     print(param.Lambda)
     start_time = time.time()
     main(param)

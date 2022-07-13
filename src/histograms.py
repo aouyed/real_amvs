@@ -227,7 +227,7 @@ def histogram(values, ax, thresh):
 def multi_histogram_ax(param, label,xlabel, ax, letter, plev):
     print(label)
     print(param.month_string)
-    for thresh in [100,10,4]:
+    for thresh in [100,10]:
         param.set_thresh(thresh)
         print(thresh)
         file='../data/processed/' + param.tag +'.nc'
@@ -288,9 +288,9 @@ def histograms(param):
         four_panel_histogram(param, 'jan_four_panel',plev)  
         three_panel_histogram(param, 'jan_four_panel',plev)  
     
-        param.set_month(datetime(2020,7,1))
-        four_panel_histogram(param, 'july_four_panel',plev) 
-        three_panel_histogram(param, 'july_four_panel',plev)  
+        #param.set_month(datetime(2020,7,1))
+        #four_panel_histogram(param, 'july_four_panel',plev) 
+        #three_panel_histogram(param, 'july_four_panel',plev)  
 
 
 
@@ -307,7 +307,9 @@ def main(param):
 if __name__=="__main__":
     param= parameters()
     #param.set_alg('farneback')
+    param.set_Lambda(0.45)
     param.set_plev_coarse(5)
-    param.set_alg('rand')    
+    param.set_alg('tvl1')
+    param.set_timedelta(6)    
     main(param)
     

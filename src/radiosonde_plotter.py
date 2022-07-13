@@ -57,7 +57,6 @@ def pressure_df(df):
 
         speed_bias_era5=df_unit['speed_error_era5'].mean()
 
-
         rmsvd_era5=np.sqrt(df_unit['error_square_era5'].mean())
         d['plev'].append(plev)
         d['rmsvd'].append(rmsvd)
@@ -195,7 +194,7 @@ def scatter_plot_cartopy(ax, title, x, y):
 def location_loader(param):
     param.set_month(datetime(2020,1,1))
     df1=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
-    param.set_month(datetime(2020,7,1))
+    param.set_month(datetime(2020,1,1))
     df2=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
     #df2=df1
     df1.reset_index(drop=True)
@@ -207,7 +206,37 @@ def location_loader(param):
     print(df.shape)
     return(df)
 
+def location_loader_total(fname, param):
+    param.set_month(datetime(2020,1,1))
+    df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
+    df=preprocess(df)
+    plevs=np.unique(df['plev'].values)
+    colors=['red','blue','yellow','purple','brown','black','green','orange','pink']
+    mStyles = ["o","v","^","<",">","8","s","p","P","*","h","H","+","x","X","D","d","|","_",0,1,2,3,4,5,6,7,8,9,10,11]
+    fig=plt.figure()
+    ax = plt.axes(projection=ccrs.PlateCarree())
+    gl=ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
+    gl.xlabels_top = False
+    gl.ylabels_right=False
+    ax.coastlines()
+    for i,plev in enumerate(plevs):
+        df_unit=df.loc[df.plev==plev]
+        nstations=df_unit.shape[0]
+        plev_string=str(int(round(plev,0))) +' N='+str(nstations)
+        ax.scatter(df_unit['lon'],df_unit['lat'],s=20,marker=mStyles[i],facecolors='none',edgecolors=colors[i],label=plev_string)
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    fig.tight_layout()
 
+    plt.savefig('../data/processed/plots/location_'+param.tag+fname +
+                '.png', bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()                                                                          
+    
+        
+        
+    
+    
+    
     
     
 def four_panel_plot(fname, param, var1='rmsvd', var2='angle', 
@@ -266,7 +295,7 @@ def n_points_plot(param):
                     '.png', bbox_inches='tight', dpi=300)
      plt.show()
      plt.close()
-    
+
 
 def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     param.set_month(datetime(2020,1,1))
@@ -275,12 +304,13 @@ def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     axlist[1]=pressure_ax(axlist[1], param, label, xlabel, xlim)
     
 
-def location_plot(fname, param):
+def location_plot(df, fname, param):
     fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
     param.set_thresh(10)
-    df=location_loader(param)
-    ax=scatter_plot_cartopy(ax,'rs_coords',df['lon_rs'],df['lat_rs'])
+    nstations=df.shape[0]
+    ax=scatter_plot_cartopy(ax,'rs_coords',df['lon'],df['lat'])
+    ax.text(0.05,0.05,str(nstations),transform=ax.transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/location_'+param.tag+fname +
@@ -355,6 +385,8 @@ def two_panel_plot(fname, param, var1='speed_rmse',
 
     
 def main(param):
+    location_loader_total('collocated_amvs_',param)
+
     two_panel_plot('speed_rmse', param)
     
     four_panel_plot('rmsvd_bias', param, var1='rmsvd',var2='speed_bias',
@@ -381,6 +413,6 @@ if __name__=='__main__':
     param.set_alg('tvl1')
     param.set_Lambda(0.15)
     param.set_month(datetime(2020,1,1))
-    param.set_timedelta(0)
+    param.set_timedelta(6)
     param.set_plev_coarse(5)
     main(param)
