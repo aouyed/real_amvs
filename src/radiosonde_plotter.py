@@ -135,9 +135,10 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
     param.set_thresh(10)
 
     df=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
+    df=df.drop_duplicates()
+
     df=preprocess(df)
     
-    df=df.drop_duplicates()
     df_pressure_era= pressure_df(df)
     df_pressure_era.round(2).to_csv('../data/processed/df_pressure_era_'+param.tag+'.csv')
 
@@ -304,7 +305,9 @@ def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     axlist[1]=pressure_ax(axlist[1], param, label, xlabel, xlim)
     
 
-def location_plot(df, fname, param):
+def location_plot(fname, param):
+    df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
+    df=preprocess(df)
     fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
     param.set_thresh(10)
@@ -385,8 +388,8 @@ def two_panel_plot(fname, param, var1='speed_rmse',
 
     
 def main(param):
-    location_loader_total('collocated_amvs_',param)
-
+    #location_loader_total('collocated_amvs_',param)
+    #location_plot('test', param) 
     two_panel_plot('speed_rmse', param)
     
     four_panel_plot('rmsvd_bias', param, var1='rmsvd',var2='speed_bias',
@@ -411,7 +414,7 @@ def main(param):
 if __name__=='__main__':
     param=parameters()
     param.set_alg('tvl1')
-    param.set_Lambda(0.15)
+    param.set_Lambda(0)
     param.set_month(datetime(2020,1,1))
     param.set_timedelta(6)
     param.set_plev_coarse(5)

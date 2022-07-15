@@ -15,7 +15,7 @@ import cartopy.crs as ccrs
 import matplotlib.ticker as mticker
 from scipy import fftpack, ndimage
 from parameters import parameters 
-
+from tqdm import tqdm 
 
 def quiver_plot(ds, title, u, v):
     #ds=ds.coarsen(latitude=5, longitude=5, boundary='trim').mean()
@@ -92,27 +92,52 @@ def three_panels(title):
     plt.close()  
     
     
+def two_panels(title, ds):
+    fig, axes = plt.subplots(ncols=2, nrows=1)
+    axlist=axes.flat
+    ds=compute(ds)
+    _=quiver_ax(axlist[0],ds, 'TV-L1', 'u', 'v','(a)')
+    Q=quiver_ax(axlist[1],ds, 'ERA-5', 'u_era5', 'v_era5','(b)')
+    qk = axlist[1].quiverkey(Q, 0.4, 0.4, 5, r'5 m/s',  labelpos='E',
+                      coordinates='axes')
+    fig.tight_layout()
+    plt.savefig('../data/processed/plots/'+title+'.png',
+                bbox_inches='tight', dpi=300)
+    plt.show()
+    plt.close()  
+    
+    
     
 def compute(ds):
-
-    #ds=xr.open_dataset('../data/processed/july.nc')
     #ds=xr.open_dataset('../data/processed/inpaint_07_01_2020_pm.nc')
-    ds=ds.sel(day=ds['day'].values[0], time='pm')
-    ds=ds.sel(satellite='snpp')
-    ds=ds.sel(plev=700, method='nearest')
+    #ds=ds.sel(plev=700, metho
+    #ds=xr.open_dataset('../dad='nearest')
+    #ds=ds.sel(plev=850, method='nearest')
+
     ds=ds.drop('obs_time')
     #ds=ds.rolling(latitude=10, longitude=10).median()
     ds['u_error']=ds.u-ds.u_era5
     ds['v_error']=ds.v-ds.v_era5
     ds['error_squared']=ds.u_error**2+ds.v_error**2
     ds['error_mag']=np.sqrt(ds.error_squared)
-    ds=ds.sel(longitude=slice(-34,-6),latitude=slice(-30,-43))
+    #ds=ds.sel(longitude=slice(-34,-6),latitude=slice(-30,-43))
     return ds     
 
-def main():
+def main(param, time):
+    ds_total=xr.open_dataset('../data/processed/'+param.tag+'.nc')
+    dates=param.dates
+    for day in tqdm(dates):
+        day_string=day.strftime('%Y_%m_%d')
+        ds=ds_total.sel(day=day, time=time)
+        ds=ds.sel(plev=850, method='nearest')
+        ds=ds.sel(longitude=slice(-7,27),latitude=slice(30,-25))
+        ds=ds.sel(satellite='snpp')
+        two_panels('test_'+time+'_'+day_string+'_'+param.tag,ds)
     
-    three_panels('three_panel')
-    ds=xr.open_dataset()
+    #three_panels('three_panel')
 if __name__ == '__main__':
-    main()
+    param=parameters()
+    param.set_Lambda(0.15)
+    param.set_timedelta(6)
+    main(param,'pm')
 

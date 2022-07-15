@@ -42,6 +42,9 @@ def space_time_collocator(days, deltat, param):
             dsdate = day.strftime('%m_%d_%Y')
             ds = xr.open_dataset('../data/processed/'+param.tag+'.nc')
             ds=ds.sel(satellite='snpp',day=day, time=time)
+            
+            #ds = xr.open_dataset('../data/processed/'+param.tag+'_'+ dsdate+'_'+time+'.nc')
+            #ds=ds.sel(satellite='snpp')
             df_unit=ds[['obs_time','u']].to_dataframe()
             df_unit=df_unit.reset_index()
             df_unit=df_unit[['latitude','longitude','obs_time','u']]
@@ -150,15 +153,12 @@ def main(param):
     df=pd.read_pickle('../data/interim/dataframes/'+param.tag+'_igra_id.pkl')
     print(df)
     igra_downloader(df,days, month_string)
+    
 
 
 
 if __name__ == '__main__':
     param=parameters()
     param.set_month(datetime(2020,1,1))
-    param.set_alg('rand')
-    main(param)
-    param=parameters()
-    param.set_month(datetime(2020,7,1))
-    param.set_alg('rand')
+    param.set_Lambda(0)
     main(param)

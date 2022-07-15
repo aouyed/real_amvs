@@ -70,11 +70,15 @@ def collocated_winds(df, param):
             df_rs=df_rs.loc[df_rs['date']==date]
             if not df_rs.empty:
                 for orbit in ('am','pm'):
-                    ds_path='../data/processed/'+tag+'.nc'
+                    #ds_path='../data/processed/'+tag+'.nc'
+                    ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
+
                     dsdate = obs_time.strftime('%m_%d_%Y')
                     ds=xr.open_dataset(ds_path)
-                    ds=ds.sel(satellite='snpp', time=orbit)
-                    ds=ds.sel(day=obs_time, method='nearest')
+                    #ds=ds.sel(satellite='snpp', time=orbit)
+                    #ds=ds.sel(day=obs_time, method='nearest')
+                    ds=ds.sel(satellite='snpp')
+
                     ds=ds.squeeze()
                     
                     ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
@@ -100,7 +104,28 @@ def collocated_winds(df, param):
                 
                 
 
-        
+def collocated_winds_test(df, param):
+    fnames=[]
+    tag=param.tag
+    df_total=pd.DataFrame()
+    for parameters in tqdm(df.values):
+        lat,lon,lon_rs, lat_rs, station,obs_time=parameters
+        fname=PATH+param.month_string+'_'+station+'.pkl'
+        if os.path.isfile(fname):
+            df_rs=pd.read_pickle(fname)
+            df_rs=df_rs.reset_index()
+            if obs_time.hour >= (24-HOURS):
+                date=datetime(obs_time.year,obs_time.month, obs_time.day+1,0)
+            elif obs_time.hour<= HOURS:
+                date=datetime(obs_time.year,obs_time.month, obs_time.day,0)
+            else:
+                date=datetime(obs_time.year,obs_time.month, obs_time.day,12)
+         
+            df_rs=df_rs.loc[df_rs['date']==date]
+            if not df_rs.empty:
+                fnames.append(fname)
+    print('no of radiosondes:')
+    print(len(fnames))
         
         
 
@@ -121,12 +146,13 @@ def main(param):
 if __name__ == '__main__':
     param=parameters()
     param.set_alg('tvl1')
+    param.set_Lambda(0)
     param.set_month(datetime(2020,1,1))
 
     main(param)
     
-    param=parameters()
-    param.set_alg('tvl1')
-    param.set_month(datetime(2020,7,1))
+    #param=parameters()
+    #param.set_alg('tvl1')
+    #param.set_month(datetime(2020,7,1))
 
-    main(param)
+    #main(param)
