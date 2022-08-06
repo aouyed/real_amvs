@@ -414,7 +414,7 @@ def main(param):
 if __name__=='__main__':
     param=parameters()
     param.set_alg('tvl1')
-    param.set_Lambda(0)
+    param.set_Lambda(0.15)
     param.set_month(datetime(2020,1,1))
     param.set_timedelta(6)
     param.set_plev_coarse(5)

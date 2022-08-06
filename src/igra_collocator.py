@@ -12,10 +12,12 @@ import config as c
 import amv_calculators as ac
 from siphon.simplewebservice.igra2 import IGRAUpperAir
 from parameters import parameters 
+import pickle 
 
 PATH='../data/interim/rs_dataframes/'
 
 HOURS=1.5 
+import pickle as pkl
 
 
 def daterange(start_date, end_date, dhour):
@@ -106,6 +108,14 @@ def collocated_igra_ids(df):
 
 
 def igra_downloader(df,days, month_string):
+    dud_fname=PATH+month_string+'_duds.pkl'
+    if os.path.isfile(dud_fname):
+       with open(dud_fname, 'rb') as handle:
+           print('loading pickle')
+           dud_database = pickle.load(handle)
+    else: 
+        dud_database={'date':[np.nan],'stationid':[np.nan]}
+        
     station_list=np.unique(df['stationid'].values)
     for station in tqdm(station_list):
         fname=PATH+month_string+'_' +station+'.pkl'
@@ -117,20 +127,35 @@ def igra_downloader(df,days, month_string):
                 first_rao=datetime(day.year, day.month, day.day, 0)
                 second_rao=datetime(day.year, day.month, day.day, 12)
                 for date in (first_rao, second_rao):    
-                    try:
-                        df_unit, header = IGRAUpperAir.request_data(date, station)
-                        df_unit['date']=date
-                        df_unit['stationid']=station
-                        if df_total.empty:
-                            df_total=df_unit
-                        else:
-                            df_total=df_total.append(df_unit)
-                    except Exception as e:
-                        pass
+                    tic = time.process_time()
+                    df_dud=pd.DataFrame(data=dud_database)
+                    dud_is=df_dud.loc[(df_dud['date'] == date) & (df_dud['stationid'] == station)].any().all()
+                    if not dud_is:
+                        try:
+                            df_unit, header = IGRAUpperAir.request_data(date, station)
+                            df_unit['date']=date
+                            df_unit['stationid']=station
+    
+                            if df_total.empty:
+                                df_total=df_unit
+                            else:
+                                df_total=df_total.append(df_unit)
+                            print('succesful retrieval')
+    
+                        except Exception as e:
+                            #print(date)
+                            #print(station)
+                            #print(e)
+                            dud_database['date'].append(date)
+                            dud_database['stationid'].append(station)
+                            with open(dud_fname, 'wb') as handle:
+                                pickle.dump(dud_database, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                            pass
+                  
             if not df_total.empty:
                 df_total.to_pickle('../data/interim/rs_dataframes/' + month_string+'_' +station +'.pkl')
-    
-    
+   
                 
             
     
@@ -160,5 +185,5 @@ def main(param):
 if __name__ == '__main__':
     param=parameters()
     param.set_month(datetime(2020,1,1))
-    param.set_Lambda(0)
+    param.set_Lambda(0.3)
     main(param)
