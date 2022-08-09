@@ -11,6 +11,7 @@ import os.path
 import config as c
 from tqdm import tqdm
 from parameters import parameters 
+import wind_collocator_tests as wct
 HOURS=1.5 
 PATH='../data/interim/rs_dataframes/'
 
@@ -70,13 +71,13 @@ def collocated_winds(df, param):
             df_rs=df_rs.loc[df_rs['date']==date]
             if not df_rs.empty:
                 for orbit in ('am','pm'):
-                    #ds_path='../data/processed/'+tag+'.nc'
-                    ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
-
+                    ds_path='../data/processed/'+tag+'.nc'
+                    #ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
+                    obs_time_short= obs_time.replace(hour=0, minute=0,second=0)
                     dsdate = obs_time.strftime('%m_%d_%Y')
                     ds=xr.open_dataset(ds_path)
-                    #ds=ds.sel(satellite='snpp', time=orbit)
-                    #ds=ds.sel(day=obs_time, method='nearest')
+                    ds=ds.sel(time=orbit)
+                    ds=ds.sel(day=obs_time_short, method='nearest')
                     ds=ds.sel(satellite='snpp')
 
                     ds=ds.squeeze()
@@ -86,6 +87,8 @@ def collocated_winds(df, param):
                     ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
                    
                     df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
+                    #ds_total=wct.ds_test(tag, orbit, obs_time,df_rs, lat, lon)
+
                     ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
                     ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
                         level=df_rs['plev'].values,  method='nearest')
@@ -146,7 +149,7 @@ def main(param):
 if __name__ == '__main__':
     param=parameters()
     param.set_alg('tvl1')
-    param.set_Lambda(0)
+    param.set_Lambda(0.3)
     param.set_month(datetime(2020,1,1))
 
     main(param)

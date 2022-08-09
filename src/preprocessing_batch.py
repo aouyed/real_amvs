@@ -19,12 +19,12 @@ param= parameters()
 param.set_alg('tvl1')
 param.set_plev_coarse(5)
 param.set_timedelta(6)
-for Lambda in [1]:
+for Lambda in [0.2,0.25,0.35,0.4]:
     param.set_Lambda(Lambda)
     for month in [1]:
         param.set_month(datetime(2020,month,1))
         main.main(param)
-        for thresh in [10,100]:
+        for thresh in [10]:
             param.set_thresh(thresh)
             vc.main(param)
             concatenator.main(param)

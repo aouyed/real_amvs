@@ -141,17 +141,20 @@ def igra_downloader(df,days, month_string):
                             else:
                                 df_total=df_total.append(df_unit)
                             print('succesful retrieval')
-    
-                        except Exception as e:
-                            #print(date)
-                            #print(station)
-                            #print(e)
+                            
+                        except ValueError as ve:
+                            print(ve)
+                            print('value error')
                             dud_database['date'].append(date)
                             dud_database['stationid'].append(station)
                             with open(dud_fname, 'wb') as handle:
                                 pickle.dump(dud_database, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    
+                        except Exception as e:
+                            print(e)
+                           
                             pass
+                    
                   
             if not df_total.empty:
                 df_total.to_pickle('../data/interim/rs_dataframes/' + month_string+'_' +station +'.pkl')
