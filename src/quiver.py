@@ -137,7 +137,7 @@ def main(param, time):
     #three_panels('three_panel')
 if __name__ == '__main__':
     param=parameters()
-    param.set_Lambda(0.15)
+    param.set_Lambda(0.3)
     param.set_timedelta(6)
     main(param,'pm')
 

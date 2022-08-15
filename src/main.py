@@ -19,7 +19,6 @@ from parameters import parameters
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-month_string=c.MONTH.strftime("%B").lower()
 QC=c.QC
 
 
@@ -119,6 +118,7 @@ def serial_loop(ds,param):
 
         
 def main(param):
+    month_string=param.month_string 
     ds=xr.open_dataset('../data/processed/real_water_vapor_noqc_'+ month_string +'.nc')
     #ds=ds.sel(plev=[850,700,500,400], method='nearest')    
     print(ds)

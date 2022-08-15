@@ -232,7 +232,7 @@ if __name__ == '__main__':
     param.set_plev_coarse(5) 
     param.set_alg('tvl1')
     param.set_timedelta(6)
-    param.set_Lambda(0.15)
+    param.set_Lambda(0.3)
     main(param)
     
 
