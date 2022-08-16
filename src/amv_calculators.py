@@ -62,7 +62,7 @@ def daterange(start_date, end_date, dhour):
 
 
 
-def calc(frame0, frame, param):
+def calc(frame0, frame, Lambda):
     if frame0.shape != frame.shape:
         frame=np.resize(frame, frame0.shape)
     
@@ -72,9 +72,10 @@ def calc(frame0, frame, param):
     nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     
-    optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
-    optical_flow.setLambda(param.Lambda)
-    #optical_flow = cv2.optflow.createOptFlow_DeepFlow()
+    #optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
+    optical_flow=cv2.optflow.createOptFlow_DeepFlow() 
+
+    ##optical_flow = cv2.optflow.createOptFlow_DeepFlow()
     flowd = optical_flow.calc(nframe0, nframe, None)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
@@ -164,7 +165,7 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
 def flow_calculator(ds_snpp, ds_j1, ds_merged, param):
     frame0=frame_retreiver_ns(ds_j1)
     frame=frame_retreiver_ns(ds_snpp)
-    flowx,flowy=calc(frame0, frame, param)
+    flowx,flowy=calc(frame0, frame, param.Lambda)
     flowx = np.expand_dims(flowx, axis=2)
     flowy = np.expand_dims(flowy, axis=2)
     ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)

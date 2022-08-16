@@ -227,7 +227,7 @@ def histogram(values, ax, thresh):
 def multi_histogram_ax(param, label,xlabel, ax, letter, plev):
     print(label)
     print(param.month_string)
-    for thresh in [100,10]:
+    for thresh in [10]:
         param.set_thresh(thresh)
         print(thresh)
         file='../data/processed/' + param.tag +'.nc'
@@ -307,9 +307,9 @@ def main(param):
 if __name__=="__main__":
     param= parameters()
     #param.set_alg('farneback')
-    param.set_Lambda(0.3)
+    param.set_Lambda(0.313)
     param.set_plev_coarse(5)
-    param.set_alg('tvl1')
-    param.set_timedelta(6)    
+    param.set_alg('deepflow')
+    param.set_timedelta(1)    
     main(param)
     
