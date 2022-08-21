@@ -309,7 +309,7 @@ if __name__=="__main__":
     #param.set_alg('farneback')
     param.set_Lambda(0.313)
     param.set_plev_coarse(5)
-    param.set_alg('deepflow')
+    param.set_alg('tvl1')
     param.set_timedelta(1)    
     main(param)
     

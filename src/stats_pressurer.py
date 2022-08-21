@@ -21,7 +21,7 @@ from parameters import parameters
 from datetime import datetime
 import histograms 
 
-THRESHOLDS=[10]
+THRESHOLDS=[10,100]
 def calc_days(thresh, days, tag):
 
     ds_total = xr.open_dataset('../data/processed/'+tag+'.nc')
@@ -178,11 +178,11 @@ def line_plotter(func, ax, month,param):
     
     
 def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  param, rmsvds):
-    fig, axes = plt.subplots(nrows=1, ncols=3)
+    fig, axes = plt.subplots(nrows=1, ncols=2)
     axlist = axes.flat
     axlist[0]=line_plotter(plot_rmsvd, axlist[0], month, param)
-    axlist[1]=line_plotter(plot_angle, axlist[1], month, param)
-    axlist[2]=line_plotter(plot_yield, axlist[2], month, param)
+    #axlist[1]=line_plotter(plot_angle, axlist[1], month, param)
+    axlist[1]=line_plotter(plot_yield, axlist[1], month, param)
     
     #axlist[0].text(-5,150,tag[0],c='red')
     #axlist[1].text(-5,150,tag[1],c='red')
@@ -191,11 +191,11 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
     axlist[0].text(0.5,0.5,tag[0], transform=axlist[0].transAxes)
     axlist[0].text(0.0,0.25,'RMSVD= ' + str(round(rmsvds['10'],2)), transform=axlist[0].transAxes)
     axlist[1].text(0.5,0.5,tag[1], transform=axlist[1].transAxes)
-    axlist[2].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
+    #axlist[1].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
     param.set_thresh(10)
     df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t10'+param.tag+'.csv')
     total_yield=df['yield'].sum()/1000
-    axlist[2].text(0.0,0.25,'total yield= ' + str(round(total_yield,2)), transform=axlist[2].transAxes)
+    axlist[1].text(0.0,0.25,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag +'_'+title +
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     param.set_plev_coarse(5) 
     param.set_alg('tvl1')
     param.set_timedelta(6)
-    param.set_Lambda(0.3)
+    param.set_Lambda(0.15)
     main(param)
     
 

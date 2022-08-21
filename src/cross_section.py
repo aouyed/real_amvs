@@ -218,7 +218,7 @@ def latlon_uniques(ds):
     
 
 
-def cross_sequence(ds, thresh, time):
+def cross_sequence(ds, thresh, time, param):
 
     #ds=ds.drop(['obs_time','obs_time_tai93'])
     ds=ds.metpy.assign_crs(grid_mapping_name='latitude_longitude',earth_radius=6371229.0)
@@ -239,7 +239,7 @@ def cross_sequence(ds, thresh, time):
     
 
 def main(param):
-    time='pm'
+    time='am'
     dsdate=param.month.strftime('%m_%d_%Y')
     for thresh in [10]:
         #time='am0'
@@ -257,7 +257,7 @@ def main(param):
  
         ds=ds.drop('obs_time')
 
-        cross_sequence(ds, thresh, time)
+        cross_sequence(ds, thresh, time, param)
         four_panel_quiver_map(ds, 'quiver_p1_'+param.tag,str( thresh),[850,700])    
         four_panel_quiver_map(ds, 'quiver_p2_'+param.tag,str( thresh),[500,400])    
         
@@ -268,6 +268,6 @@ if __name__=="__main__":
     param=parameters()
     param.set_alg('tvl1')
     param.set_Lambda(0.15)
-    param.set_month(datetime(2020,1,1))
+    param.set_month(datetime(2020,7,1))
     main(param)
     

@@ -299,9 +299,9 @@ def n_points_plot(param):
 
 
 def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
-    #param.set_month(datetime(2020,1,1))
+    param.set_month(datetime(2020,1,1))
     axlist[0]=pressure_ax(axlist[0],param, label,xlabel, xlim)
-    #param.set_month(datetime(2020,7,1))
+    param.set_month(datetime(2020,7,1))
     axlist[1]=pressure_ax(axlist[1], param, label, xlabel, xlim)
     
 

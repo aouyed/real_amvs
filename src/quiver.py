@@ -48,7 +48,7 @@ def quiver_plot_cartopy(ds, title, u, v):
     ax = plt.axes(projection=ccrs.PlateCarree())
     ax.coastlines()
     Q = ax.quiver(X, Y, np.squeeze(
-        ds[u].values), np.squeeze(ds[v].values))
+        ds[u].values), np.squeeze(ds[v].values),scale=200)
     qk = ax.quiverkey(Q, 0.5, 0.5, 10, r'10 m/s', labelpos='E',
                       coordinates='figure')
     fig.tight_layout()
@@ -123,7 +123,7 @@ def compute(ds):
     #ds=ds.sel(longitude=slice(-34,-6),latitude=slice(-30,-43))
     return ds     
 
-def main(param, time):
+def main_figure(param, time):
     ds_total=xr.open_dataset('../data/processed/'+param.tag+'.nc')
     dates=param.dates
     for day in tqdm(dates):
@@ -133,11 +133,25 @@ def main(param, time):
         ds=ds.sel(longitude=slice(-7,27),latitude=slice(30,-25))
         ds=ds.sel(satellite='snpp')
         two_panels('test_'+time+'_'+day_string+'_'+param.tag,ds)
-    
+        
+def main(param, time):
+    ds_total=xr.open_dataset('../data/processed/'+param.tag+'.nc')
+    dates=param.dates
+    for day in tqdm(dates[:2]):
+        day_string=day.strftime('%Y_%m_%d')
+        ds=ds_total.sel(day=day, time=time)
+        ds=ds.sel(plev=850, method='nearest')
+        #ds=ds.sel(longitude=slice(-7,27),latitude=slice(30,-25))
+        ds=ds.sel(satellite='snpp')
+        quiver_plot_cartopy(ds, 'test', 'u', 'v')
+        quiver_plot_cartopy(ds, 'test_era5', 'u_era5', 'v_era5')
+
     #three_panels('three_panel')
 if __name__ == '__main__':
     param=parameters()
-    param.set_Lambda(0.3)
+    param.set_Lambda(0.15)
+    param.set_plev_coarse(5)
+    param.set_alg('tvl1')
     param.set_timedelta(6)
     main(param,'pm')
 

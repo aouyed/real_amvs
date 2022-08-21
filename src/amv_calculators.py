@@ -62,7 +62,7 @@ def daterange(start_date, end_date, dhour):
 
 
 
-def calc(frame0, frame, Lambda):
+def calc(frame0, frame, Lambda, alg):
     if frame0.shape != frame.shape:
         frame=np.resize(frame, frame0.shape)
     
@@ -72,10 +72,13 @@ def calc(frame0, frame, Lambda):
     nframe = cv2.normalize(src=frame, dst=None,
                             alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
     
-    #optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
-    optical_flow=cv2.optflow.createOptFlow_DeepFlow() 
+    
+    if alg=='deepflow':
+        optical_flow=cv2.optflow.createOptFlow_DeepFlow() 
+    else:
+        optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
 
-    ##optical_flow = cv2.optflow.createOptFlow_DeepFlow()
+
     flowd = optical_flow.calc(nframe0, nframe, None)
     flowx=flowd[:,:,0]
     flowy=flowd[:,:,1]
