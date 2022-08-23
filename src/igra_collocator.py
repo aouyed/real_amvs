@@ -49,14 +49,14 @@ def space_time_collocator(days, deltat, param):
             #ds=ds.sel(satellite='snpp')
             df_unit=ds[['obs_time','u']].to_dataframe()
             df_unit=df_unit.reset_index()
-            df_unit=df_unit[['latitude','longitude','obs_time','u']]
+            df_unit=df_unit[['latitude','longitude','obs_time','u','time']]
             first_rao=datetime(day.year, day.month, day.day, 0)
             second_rao=datetime(day.year, day.month, day.day, 12)
             condition1=df_unit['obs_time'].between(first_rao-deltat,first_rao+deltat)
             condition2=df_unit['obs_time'].between(second_rao-deltat,second_rao+deltat)
             df_unit=df_unit.loc[condition1 | condition2]
             df_unit=df_unit.dropna()
-            df_unit=df_unit[['latitude','longitude','obs_time']]
+            df_unit=df_unit[['latitude','longitude','obs_time','time']]
             df_unit=df_unit.drop_duplicates()
                 
             if df.empty:
@@ -83,9 +83,9 @@ def collocated_igra_ids(df):
      start_time = time.time()
      stations = igra.download.stationlist('/tmp')
 
-     station_dict={'lat':[],'lon':[],'lon_rs':[],'lat_rs':[],'stationid':[],'obs_time':[]}
+     station_dict={'lat':[],'lon':[],'lon_rs':[],'lat_rs':[],'stationid':[],'obs_time':[],'orbit':[]}
      for latlon in tqdm(df.values):
-         lat,lon,obs_time = latlon
+         lat,lon,obs_time, orbit = latlon
          df_unit=collocate_igra(stations, lat, lon)
          if not df_unit.empty:
              
@@ -96,6 +96,8 @@ def collocated_igra_ids(df):
              station_dict['lon_rs'].append(df_unit['lon'].values[0])
              station_dict['stationid'].append(ids[0])
              station_dict['obs_time'].append(obs_time)
+             station_dict['orbit'].append(orbit)
+
              
      output_df=pd.DataFrame(data=station_dict)
      print("--- %s seconds ---" % (time.time() - start_time))    

@@ -56,7 +56,7 @@ def collocated_winds(df, param):
     tag=param.tag
     df_total=pd.DataFrame()
     for parameters in tqdm(df.values):
-        lat,lon,lon_rs, lat_rs, station,obs_time=parameters
+        lat,lon,lon_rs, lat_rs, station,obs_time, orbit =parameters
         fname=PATH+param.month_string+'_'+station+'.pkl'
         if os.path.isfile(fname):
             df_rs=pd.read_pickle(fname)
@@ -70,68 +70,43 @@ def collocated_winds(df, param):
          
             df_rs=df_rs.loc[df_rs['date']==date]
             if not df_rs.empty:
-                for orbit in ('am','pm'):
-                    ds_path='../data/processed/'+tag+'.nc'
-                    #ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
-                    obs_time_short= obs_time.replace(hour=0, minute=0,second=0)
-                    dsdate = obs_time.strftime('%m_%d_%Y')
-                    ds=xr.open_dataset(ds_path)
-                    ds=ds.sel(time=orbit)
-                    ds=ds.sel(day=obs_time_short, method='nearest')
-                    ds=ds.sel(satellite='snpp')
+                #for orbit in ('am','pm'):
+                ds_path='../data/processed/'+tag+'.nc'
+                #ds_path=obs_time.strftime('../data/processed/'+tag+'_%m_%d_%Y')+'_'+orbit+'.nc'
+                obs_time_short= obs_time.replace(hour=0, minute=0,second=0)
+                dsdate = obs_time.strftime('%m_%d_%Y')
+                ds=xr.open_dataset(ds_path)
+                ds=ds.sel(time=orbit)
+                ds=ds.sel(day=obs_time_short, method='nearest')
+                ds=ds.sel(satellite='snpp')
 
-                    ds=ds.squeeze()
-                    
-                    ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
-                    ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
-                    ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
-                   
-                    df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
-                    #ds_total=wct.ds_test(tag, orbit, obs_time,df_rs, lat, lon)
+                ds=ds.squeeze()
+                
+                ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
+                ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
+                ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
+               
+                df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
+                #ds_total=wct.ds_test(tag, orbit, obs_time,df_rs, lat, lon)
 
-                    ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
-                    ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
-                        level=df_rs['plev'].values,  method='nearest')
-                   
-                    df_s=ds.to_dataframe().reset_index()
-                    df_m=ds_model.to_dataframe().reset_index()
-    
-                    df_rs=df_calculator(df_rs, df_s, df_m, lat, lon, lat_rs, lon_rs)
-                    if df_total.empty:
-                        df_total=df_rs
-                    else:
-                        df_total=df_total.append(df_rs)
+                ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
+                ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
+                    level=df_rs['plev'].values,  method='nearest')
+               
+                df_s=ds.to_dataframe().reset_index()
+                if obs_time not in df_s['obs_time'].values:
+                    breakpoint()
+                df_m=ds_model.to_dataframe().reset_index()
+
+                df_rs=df_calculator(df_rs, df_s, df_m, lat, lon, lat_rs, lon_rs)
+                if df_total.empty:
+                    df_total=df_rs
+                else:
+                    df_total=df_total.append(df_rs)
     df_total.to_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+tag+'.pkl')
     
 
                 
-                
-
-def collocated_winds_test(df, param):
-    fnames=[]
-    tag=param.tag
-    df_total=pd.DataFrame()
-    for parameters in tqdm(df.values):
-        lat,lon,lon_rs, lat_rs, station,obs_time=parameters
-        fname=PATH+param.month_string+'_'+station+'.pkl'
-        if os.path.isfile(fname):
-            df_rs=pd.read_pickle(fname)
-            df_rs=df_rs.reset_index()
-            if obs_time.hour >= (24-HOURS):
-                date=datetime(obs_time.year,obs_time.month, obs_time.day+1,0)
-            elif obs_time.hour<= HOURS:
-                date=datetime(obs_time.year,obs_time.month, obs_time.day,0)
-            else:
-                date=datetime(obs_time.year,obs_time.month, obs_time.day,12)
-         
-            df_rs=df_rs.loc[df_rs['date']==date]
-            if not df_rs.empty:
-                fnames.append(fname)
-    print('no of radiosondes:')
-    print(len(fnames))
-        
-        
-
 
 
     

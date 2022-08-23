@@ -149,8 +149,9 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
+        breakpoint()
         #n_points=df[['lat_rs','lon_rs','stationid','date']].drop_duplicates().dropna().shape[0]
-        n_points=df_unit[['lat_rs','lon_rs','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+        n_points=df_unit[['lat_rs','lon_rs','lat','lon','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
 
         df_pressure= pressure_df(df_unit)
         df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')
@@ -308,6 +309,7 @@ def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
 def location_plot(fname, param):
     df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
     df=preprocess(df)
+    df=df[['stationid','lat_rs','lon_rs']].drop_duplicates()
     fig=plt.figure()
     ax = plt.axes(projection=ccrs.PlateCarree())
     param.set_thresh(10)
@@ -406,6 +408,7 @@ def main(param):
                      xlabel2='v bias [m/s]', xlim1=(-5,5), xlim2=(-5,5))
 
     n_points_plot(param)
+    #location_plot('test', param)
     
     
     
@@ -414,8 +417,8 @@ def main(param):
 if __name__=='__main__':
     param=parameters()
     param.set_alg('tvl1')
-    param.set_Lambda(0)
-    param.set_month(datetime(2020,1,1))
+    param.set_Lambda(0.15)
+    param.set_month(datetime(2020,7,1))
     param.set_timedelta(6)
     param.set_plev_coarse(5)
     main(param)
