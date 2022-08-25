@@ -168,7 +168,7 @@ def prepare_patch(ds_snpp, ds_j1, ds_model, start, end):
 def flow_calculator(ds_snpp, ds_j1, ds_merged, param):
     frame0=frame_retreiver_ns(ds_j1)
     frame=frame_retreiver_ns(ds_snpp)
-    flowx,flowy=calc(frame0, frame, param.Lambda)
+    flowx,flowy=calc(frame0, frame, param.Lambda, param.alg)
     flowx = np.expand_dims(flowx, axis=2)
     flowy = np.expand_dims(flowy, axis=2)
     ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)

@@ -17,7 +17,7 @@ import radiosonde_plotter as rp
 import cross_section as cc
 import stats_pressurer as sp
 param= parameters()
-param.set_alg('tvl1')
+param.set_alg('rand')
 param.set_plev_coarse(5)
 param.set_timedelta(6)
 for Lambda in [0.15]:
@@ -27,8 +27,8 @@ for Lambda in [0.15]:
         #main.main(param)
         for thresh in [10]:
             param.set_thresh(thresh)
-           # vc.main(param)
-            #concatenator.main(param)
+            vc.main(param)
+            concatenator.main(param)
             ic.main(param)
             wc.main(param)
             #rp.main(param)

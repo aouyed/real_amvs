@@ -17,7 +17,7 @@ import radiosonde_plotter as rp
 import cross_section as cc
 import stats_pressurer as sp
 param= parameters()
-param.set_alg('tvl1')
+param.set_alg('rand')
 param.set_plev_coarse(5)
 param.set_timedelta(6)
 

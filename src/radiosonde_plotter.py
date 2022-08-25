@@ -149,10 +149,8 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         param.set_thresh(thresh)
         df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
         df_unit=preprocess(df_unit)
-        breakpoint()
         #n_points=df[['lat_rs','lon_rs','stationid','date']].drop_duplicates().dropna().shape[0]
         n_points=df_unit[['lat_rs','lon_rs','lat','lon','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
-
         df_pressure= pressure_df(df_unit)
         df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')
         means=df_pressure[rmsvd_label].mean()
@@ -192,52 +190,8 @@ def scatter_plot_cartopy(ax, title, x, y):
     return ax
 
 
-
-def location_loader(param):
-    param.set_month(datetime(2020,1,1))
-    df1=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
-    param.set_month(datetime(2020,1,1))
-    df2=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
-    #df2=df1
-    df1.reset_index(drop=True)
-    df2.reset_index(drop=True)
-    df=df1.append(df2).reset_index(drop=True)
-    df=preprocess(df)
-    #df=df.loc[df.error_mag<4]
-    df=df[['lat_rs','lon_rs','stationid']].drop_duplicates(ignore_index=True)
-    print(df.shape)
-    return(df)
-
-def location_loader_total(fname, param):
-    param.set_month(datetime(2020,1,1))
-    df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
-    df=preprocess(df)
-    plevs=np.unique(df['plev'].values)
-    colors=['red','blue','yellow','purple','brown','black','green','orange','pink']
-    mStyles = ["o","v","^","<",">","8","s","p","P","*","h","H","+","x","X","D","d","|","_",0,1,2,3,4,5,6,7,8,9,10,11]
-    fig=plt.figure()
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    gl=ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
-    gl.xlabels_top = False
-    gl.ylabels_right=False
-    ax.coastlines()
-    for i,plev in enumerate(plevs):
-        df_unit=df.loc[df.plev==plev]
-        nstations=df_unit.shape[0]
-        plev_string=str(int(round(plev,0))) +' N='+str(nstations)
-        ax.scatter(df_unit['lon'],df_unit['lat'],s=20,marker=mStyles[i],facecolors='none',edgecolors=colors[i],label=plev_string)
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    fig.tight_layout()
-
-    plt.savefig('../data/processed/plots/location_'+param.tag+fname +
-                '.png', bbox_inches='tight', dpi=300)
-    plt.show()
-    plt.close()                                                                          
-    
         
         
-    
-    
     
     
     
@@ -307,15 +261,26 @@ def two_radiosonde_panels(axlist, label, xlabel, xlim, param):
     
 
 def location_plot(fname, param):
+    
+    fig, axes =plt.subplots(nrows=2, ncols=1,subplot_kw={'projection': ccrs.PlateCarree()})
+    axlist=axes.flat
+    param.set_month(datetime(2020,1,1))
     df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
     df=preprocess(df)
-    df=df[['stationid','lat_rs','lon_rs']].drop_duplicates()
-    fig=plt.figure()
-    ax = plt.axes(projection=ccrs.PlateCarree())
-    param.set_thresh(10)
+    df=df[['stationid','lat_rs','lon_rs','date']].drop_duplicates()
     nstations=df.shape[0]
-    ax=scatter_plot_cartopy(ax,'rs_coords',df['lon'],df['lat'])
-    ax.text(0.05,0.05,str(nstations),transform=ax.transAxes)
+    df=df[['stationid','lat_rs','lon_rs']].drop_duplicates()
+    axlist[0]=scatter_plot_cartopy(axlist[0],'rs_coords',df['lon_rs'],df['lat_rs'])
+    axlist[0].text(0.05,0.05,str(nstations),transform=axlist[0].transAxes)
+    
+    param.set_month(datetime(2020,7,1))
+    df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
+    df=preprocess(df)
+    df=df[['stationid','lat_rs','lon_rs','date']].drop_duplicates()
+    nstations=df.shape[0]
+    df=df[['stationid','lat_rs','lon_rs']].drop_duplicates()
+    axlist[1]=scatter_plot_cartopy(axlist[1],'rs_coords',df['lon_rs'],df['lat_rs'])
+    axlist[1].text(0.05,0.05,str(nstations),transform=axlist[1].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/location_'+param.tag+fname +
@@ -390,25 +355,13 @@ def two_panel_plot(fname, param, var1='speed_rmse',
 
     
 def main(param):
-    #location_loader_total('collocated_amvs_',param)
-    #location_plot('test', param) 
-    two_panel_plot('speed_rmse', param)
-    
     four_panel_plot('rmsvd_bias', param, var1='rmsvd',var2='speed_bias',
                     xlabel1='RMSVD [m/s]', xlabel2='Speed bias [m/s]',xlim2=(-5,5))
+    four_panel_plot('angle', param, var1='angle',var2='angle_bias',
+                    xlabel1='RMSVD [m/s]', xlabel2='Speed bias [m/s]',xlim2=(-5,5))
     
-    four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
-                     xlabel1='u bias [m/s]', 
-                     xlabel2='v bias', xlim1=(-5,5), xlim2=(-5,5))
-    four_panel_plot('bias', param, var1='speed_bias', var2='angle_bias', 
-                     xlabel1='Speed bias [m/s]', 
-                     xlabel2='Angle bias [deg]', xlim1=(-5,5), xlim2=(-20,20))
-    four_panel_plot('component bias', param, var1='u_error', var2='v_error', 
-                     xlabel1='u bias [m/s]', 
-                     xlabel2='v bias [m/s]', xlim1=(-5,5), xlim2=(-5,5))
-
     n_points_plot(param)
-    #location_plot('test', param)
+    location_plot('test', param)
     
     
     

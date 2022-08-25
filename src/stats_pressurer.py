@@ -123,6 +123,7 @@ def calc_pressure(pressures,thresh, days, tag, param):
     df=pd.DataFrame(data=d)
     print(df)
     df.set_index('pressure', drop=True)
+    print('../data/processed/dataframes/'+param.month_string+'_rmsvd_t'+str(thresh)+tag+'.csv')
     df.to_csv('../data/processed/dataframes/'+param.month_string+'_rmsvd_t'+str(thresh)+tag+'.csv')
     
         
@@ -180,7 +181,7 @@ def line_plotter(func, ax, month,param):
 def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  param, rmsvds):
     fig, axes = plt.subplots(nrows=1, ncols=2)
     axlist = axes.flat
-    axlist[0]=line_plotter(plot_rmsvd, axlist[0], month, param)
+    axlist[0]=line_plotter(plot_angle, axlist[0], month, param)
     #axlist[1]=line_plotter(plot_angle, axlist[1], month, param)
     axlist[1]=line_plotter(plot_yield, axlist[1], month, param)
     
@@ -190,12 +191,18 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
 
     axlist[0].text(0.5,0.5,tag[0], transform=axlist[0].transAxes)
     axlist[0].text(0.0,0.25,'RMSVD= ' + str(round(rmsvds['10'],2)), transform=axlist[0].transAxes)
+    axlist[0].text(0.0,0.1,'RMSVD= ' + str(round(rmsvds['100'],2)), transform=axlist[0].transAxes)
+
     axlist[1].text(0.5,0.5,tag[1], transform=axlist[1].transAxes)
     #axlist[1].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
     param.set_thresh(10)
     df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t10'+param.tag+'.csv')
     total_yield=df['yield'].sum()/1000
     axlist[1].text(0.0,0.25,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
+    param.set_thresh(100)
+    df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t100'+param.tag+'.csv')
+    total_yield=df['yield'].sum()/1000
+    axlist[1].text(0.0,0.1,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag +'_'+title +
@@ -220,17 +227,17 @@ def threshold_fun(param):
 def main(param):
     param.set_month(datetime(2020,1,1))
     rmsvds=threshold_fun(param)
-    multiple_lineplots(['(a)','(b)','(c)'],'january','january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param, rmsvds)
-    #param.set_month(datetime(2020,7,1))
-    #rmsvds=threshold_fun(param)
-    #multiple_lineplots(['(d)','(e)','(f)'],'july','july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
+    multiple_lineplots(['(a)','(b)','(c)'],'january','angle_january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param, rmsvds)
+    param.set_month(datetime(2020,7,1))
+    rmsvds=threshold_fun(param)
+    multiple_lineplots(['(d)','(e)','(f)'],'july','angle_july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
 
 
 
 if __name__ == '__main__':
     param=parameters()
     param.set_plev_coarse(5) 
-    param.set_alg('tvl1')
+    param.set_alg('rand')
     param.set_timedelta(6)
     param.set_Lambda(0.15)
     main(param)

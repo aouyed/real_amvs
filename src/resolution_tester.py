@@ -131,6 +131,7 @@ def df_mean():
     df_jan=df_loop(df_jan)
     df_july=pd.read_pickle('../data/processed/july_deepflow.pkl')
     df_july=df_loop(df_july)
+    breakpoint()
     df_plot(df_jan, df_july)
     df_plot(df_jan, df_july, variable='rmsvd')
     df_tvl1=pd.read_pickle('../data/processed/january_tvl1.pkl')

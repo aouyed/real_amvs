@@ -10,7 +10,8 @@ from parameters import parameters
 from datetime import datetime
 import numpy as np 
 from tqdm import tqdm 
-    
+import pandas as pd
+
 def compute_error(ds, thresh):
     ds['u_error']=ds['u']-ds['u_era5']
     ds['v_error']=ds['v']-ds['v_era5']
@@ -22,7 +23,7 @@ def compute_error(ds, thresh):
     return ds
 
 
-def main(param):
+def main_old(param):
     for thresh in tqdm((100,10,4)):
         param.set_alg('tvl1')
         param.set_thresh(100)
@@ -31,8 +32,8 @@ def main(param):
         u_wind=ds['u'].values
         v_wind=ds['v'].values
     
-        u_random= np.random.uniform(low=-20, high=20, size=u_wind.shape)
-        v_random= np.random.uniform(low=-20, high=20, size=u_wind.shape)
+        u_random= np.random.uniform(low=-15, high=15, size=u_wind.shape)
+        v_random= np.random.uniform(low=-15, high=15, size=u_wind.shape)
     
         u_random[u_wind==np.nan]=np.nan
         v_random[v_wind==np.nan]=np.nan
@@ -49,16 +50,44 @@ def main(param):
         ds.to_netcdf('../data/processed/'+param.tag+'.nc')
 
 
+def compute(ds, param):
+    u_wind=ds['u'].values
+    v_wind=ds['v'].values
 
+    u_random= np.random.uniform(low=-15, high=15, size=u_wind.shape)
+    v_random= np.random.uniform(low=-15, high=15, size=u_wind.shape)
+
+    u_random[u_wind==np.nan]=np.nan
+    v_random[v_wind==np.nan]=np.nan
     
+    ds['u']=(['plev','time','day',
+                     'latitude','longitude','satellite'], u_random)
+    ds['v']=(['plev','time','day',
+                     'latitude','longitude','satellite'], v_random)
+   
+    
+    return ds
 
+def main(param):
+    for date in tqdm(param.dates): 
+        for orbit in ('am','pm'):
+            date=pd.Timestamp(date).to_pydatetime()
+            date_string=date.strftime('%m_%d_%Y')
+
+            ds_unit=xr.open_dataset('../data/processed/tvl1'+
+                    '_lambda_'+str(param.Lambda)+'_'+date_string+'_'+orbit+'.nc')
+            ds_unit=compute(ds_unit, param)
+            ds_unit.to_netcdf('../data/processed/rand'+
+                    '_lambda_'+str(param.Lambda)+'_'+date_string+'_'+orbit+'.nc')
+                
+    
 
 
     
     
 if __name__=="__main__":
     param= parameters()
-    #param.set_alg('farneback')
+    param.set_alg('tvl1')
     param.set_plev_coarse(5)
     param.set_month(datetime(2020,1,1))
     main(param)
