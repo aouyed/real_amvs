@@ -3,12 +3,10 @@
 import xarray as xr
 import pandas as pd
 import numpy as np 
-import plotter 
 import matplotlib.pyplot as plt
-
 from scipy import stats
-
-
+from parameters import parameters
+VMAX=0.2
 def big_histogram(ds, column_x, column_y, xedges, yedges, bins=100):
     #xedges = [np.inf, -np.inf]
     #yedges = [np.inf, -np.inf]
@@ -28,90 +26,100 @@ def big_histogram(ds, column_x, column_y, xedges, yedges, bins=100):
         
     heatmap, _, _ = np.histogram2d(
                 df[column_x].values, df[column_y].values, bins=[xbins, ybins])
-      
-    
+    heatmap = 100*heatmap/np.sum(heatmap)
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
     return heatmap.T, extent
 
 
 
-def binned_statistics(ds, column_x, column_y, bins=20):
-    df=ds[[column_x, column_y]].to_dataframe().reset_index().dropna()
-    binned_values=stats.binned_statistic(df[column_x].values,  df[column_y].values, 'mean', bins=bins)
-    
-    return binned_values
 
-def hist_unit(label1, label2, ax, xedges, yedges):
+def hist_unit(ds, label1, label2, ax, xedges, yedges):
     hist,edges=big_histogram(ds, label1, label2, xedges, yedges)
-    ax.imshow(hist, vmin=0, vmax=10, extent=edges,aspect='auto',origin='lower', cmap='CMRmap_r')
-    return ax    
+    im = ax.imshow(hist, vmin=0, vmax=1.5e-1, extent=edges,aspect='auto',origin='lower', cmap='CMRmap_r')
+    return ax, im    
     
-def three_panel_hist(ds, label, yedges):
-    fig, axes = plt.subplots(nrows=3, ncols=1)
-    axlist = axes.flat
-    axlist[0]=hist_unit('grad_q', label, axlist[0],[0,0.002],yedges)
-    axlist[1]=hist_unit('speed', label, axlist[1],[0,40], yedges)
-    axlist[2]=hist_unit('angle_q', label, axlist[2],[0,180], yedges)
+def ax_compute(ax,var,edges,ds, df, letter, alg, is_amv):
+    ax, im =hist_unit(ds,var, var+'_era5', ax,edges,edges)
+    if is_amv:
+        ax.set_ylabel(r'$\mathrm{'+var+'}_{\mathrm{ERA 5}}$')
+    ax.set_xlabel(r'$\mathrm{'+var+'}_{\mathrm{'+alg+'}}$')
+    r=df['r'].loc[df['var']==var].values.item()
+    ax.text(0.7,0.5,'r = ' + str(round(r,2)),transform=ax.transAxes)
+    ax.text(0.1,0.7,letter,transform=ax.transAxes)
+    return im
 
-        
+
+def multiple_panel_hist(label, ds_rand,ds_tvl1, df_rand, df_tvl1):
+    fig, axes = plt.subplots(nrows=3, ncols=2)
+    axlist = axes.flat
+    im=ax_compute(axlist[0],'speed',[0,30],ds_tvl1,df_tvl1,'(a)','AMV', True)
+    ax_compute(axlist[1],'speed',[0,30],ds_rand,df_rand,'(b)','rand', False)
+    
+    ax_compute(axlist[2],'u',[-15,15],ds_tvl1,df_tvl1,'(c)','AMV', True)
+    ax_compute(axlist[3],'u',[-15,15],ds_rand,df_rand,'(d)','rand', False)
+    
+    ax_compute(axlist[4],'v',[-15,15],ds_tvl1,df_tvl1,'(e)','AMV', True)
+    ax_compute(axlist[5],'v',[-15,15],ds_rand,df_rand,'(f)','rand', False)
+    cbar_ax = fig.add_axes([0.12, -0.07, 0.77, 0.05])
+    fig.colorbar(im, cax=cbar_ax, orientation='horizontal', label='percent')
+    
     plt.tight_layout()
     #fig.subplots_adjust(hspace=0.15)
 
-    plt.savefig('../data/processed/plots/test_'+ label+'.png', bbox_inches='tight', dpi=500)
+    plt.savefig('../data/processed/plots/2d_hist_'+ label+'.png', bbox_inches='tight', dpi=500)
     plt.show()
     plt.close()
     
     
-def two_panel_bins(ds):
-    binned_values=binned_statistics(ds,'humidity_overlap', 'speed_diff', 15)
 
-    fig, axes = plt.subplots(nrows=1, ncols=1)
-    axlist = axes.flat
-    axlist[0].plot(binned_values[1][:-1], binned_values[0])
-    axlist[1].plot(binned_values[1][:-1], binned_values[0])      
 
-    plt.tight_layout()
-    #fig.subplots_adjust(hspace=0.15)
 
-    plt.savefig('../data/processed/plots/test_bins.png', bbox_inches='tight', dpi=500)
-    plt.show()
-    plt.close()
+def compute_corr(ds):
+    corrs={'var':[],'r':[]}
 
-def binned_plot(ds):
-    fig, ax = plt.subplots()
-    binned_values=binned_statistics(ds,'humidity_overlap', 'error_square', 10)
-    ax.plot(binned_values[1][:-1],np.sqrt( binned_values[0]))
-    ax.set_xlabel('specific humidity [g/g]')    
+    r=xr.corr(ds['speed'],ds['speed_era5']).item()
+    corrs['var'].append('speed')
+    corrs['r'].append(r)
+                      
+    r=xr.corr(ds['u'],ds['u_era5']).item()
+    corrs['var'].append('u')
+    corrs['r'].append(r)
     
+    r=xr.corr(ds['v'],ds['v_era5']).item()
+    corrs['var'].append('v')
+    corrs['r'].append(r)
     
-    plt.savefig('../data/processed/plots/test_bins.png', bbox_inches='tight', dpi=500)
-    plt.show()
-    plt.close()
-
-def compute():
-    ds=xr.open_dataset('tvl1_coarse_january_5_t10_tdelta_6_Lambda_0.15.nc')
+    df=pd.DataFrame(data=corrs)
+    
+    return df
+  
+def compute(param):
+    ds = xr.open_dataset('../data/processed/'+param.tag+'.nc')
+    
     ds=ds.sel(satellite='j1')
     ds['speed']=np.sqrt(ds.u**2 + ds.v**2)
     ds['speed_era5']=np.sqrt(ds.u_era5**2 + ds.v_era5**2)
-    xr.corr(ds['speed'],ds['speed_era5'])    
     
-ds=xr.open_dataset('../data/processed/tvl1_coarse_january_5_t10_01_01_2020_am.nc')
-ds_total = xr.open_dataset('../data/processed/'+tag+'.nc')
+    df= compute_corr(ds)
+    return ds, df    
+    
+def main(param):
+    
+    param.set_alg('rand')
+    ds_rand, df_rand=compute(param)
+    
+    param.set_alg('tvl1')
+    ds_tvl1, df_tvl1=compute(param)
+    multiple_panel_hist(param.tag, ds_rand,ds_tvl1, df_rand, df_tvl1)
+    
+if __name__ == '__main__':
+    param=parameters()
+    param.set_plev_coarse(5) 
+    param.set_timedelta(6)
+    param.set_Lambda(0.15)
+    main(param)
+    
 
-ds=ds.sel(satellite='j1',day=ds['day'].values[0])
-ds=ds.sel(plev=700, method='nearest')
-ds=plotter.compute(ds)
-
-ds['angle']=abs(ds['angle'])
-ds['angle_q']=abs(ds['angle_q'])
-
-ds['humidity_overlap']=1000*ds['humidity_overlap']
-print(xr.corr(ds.angle_q, ds.error_mag))
-binned_plot(ds)
-#three_panel_hist(ds, 'angle',[0,180])
-#three_panel_hist(ds, 'speed_diff',[-5,5])
-
-#hist,edges=big_histogram(ds, 'angle_q', 'angle')
-#hist,edges=big_histogram(ds, 'grad_q', 'angle')
-#plt.imshow(hist, vmin=0, vmax=100, extent=[0,1,0,1],origin='upper')
-#plt.show()
+    
+    
+    

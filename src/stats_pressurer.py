@@ -151,13 +151,13 @@ def  plot_angle(ax, df, width, thresh):
      ax.set_xticks(np.arange(0, 70, 15))
 
 def  plot_yield(ax, df, width, thresh):
-     ax.plot( df['yield']/(7*1000),df['pressure'],  label='δ = '+str(thresh)+' m/s', linewidth=width)
-     ax.set_xlabel('1000 counts per day')
+     ax.plot( df['yield']/(7*10000),df['pressure'],  label='δ = '+str(thresh)+' m/s', linewidth=width)
+     ax.set_xlabel('10 000 counts per day')
      ax.set_yscale('symlog')
      ax.set_yticklabels(np.arange(1000, 50, -150))
      ax.set_ylim(df['pressure'].max(), df['pressure'].min())
      ax.set_yticks(np.arange(1000, 50, -150))
-     nticks=np.arange(0, 30, 5)
+     nticks=np.arange(0, 6, 1)
      ax.set_xticklabels(nticks)
      ax.set_xticks(nticks)
 
@@ -181,7 +181,7 @@ def line_plotter(func, ax, month,param):
 def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  param, rmsvds):
     fig, axes = plt.subplots(nrows=1, ncols=2)
     axlist = axes.flat
-    axlist[0]=line_plotter(plot_angle, axlist[0], month, param)
+    axlist[0]=line_plotter(plot_rmsvd, axlist[0], month, param)
     #axlist[1]=line_plotter(plot_angle, axlist[1], month, param)
     axlist[1]=line_plotter(plot_yield, axlist[1], month, param)
     
@@ -197,11 +197,11 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
     #axlist[1].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
     param.set_thresh(10)
     df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t10'+param.tag+'.csv')
-    total_yield=df['yield'].sum()/1000
+    total_yield=df['yield'].sum()/1e4/7
     axlist[1].text(0.0,0.25,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
     param.set_thresh(100)
     df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t100'+param.tag+'.csv')
-    total_yield=df['yield'].sum()/1000
+    total_yield=df['yield'].sum()/1e4/7
     axlist[1].text(0.0,0.1,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
 
     fig.tight_layout()
@@ -237,7 +237,7 @@ def main(param):
 if __name__ == '__main__':
     param=parameters()
     param.set_plev_coarse(5) 
-    param.set_alg('rand')
+    param.set_alg('tvl1')
     param.set_timedelta(6)
     param.set_Lambda(0.15)
     main(param)
