@@ -369,7 +369,7 @@ def main(param):
 
 if __name__=='__main__':
     param=parameters()
-    param.set_alg('tvl1')
+    param.set_alg('rand')
     param.set_Lambda(0.15)
     param.set_month(datetime(2020,7,1))
     param.set_timedelta(6)

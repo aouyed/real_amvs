@@ -94,6 +94,7 @@ def compute_corr(ds):
     return df
   
 def compute(param):
+    print('computing corr')
     ds = xr.open_dataset('../data/processed/'+param.tag+'.nc')
     
     ds=ds.sel(satellite='j1')

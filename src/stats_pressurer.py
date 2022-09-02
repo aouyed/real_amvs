@@ -191,7 +191,7 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
 
     axlist[0].text(0.5,0.5,tag[0], transform=axlist[0].transAxes)
     axlist[0].text(0.0,0.25,'RMSVD= ' + str(round(rmsvds['10'],2)), transform=axlist[0].transAxes)
-    axlist[0].text(0.0,0.1,'RMSVD= ' + str(round(rmsvds['100'],2)), transform=axlist[0].transAxes)
+    #axlist[0].text(0.0,0.1,'RMSVD= ' + str(round(rmsvds['100'],2)), transform=axlist[0].transAxes)
 
     axlist[1].text(0.5,0.5,tag[1], transform=axlist[1].transAxes)
     #axlist[1].text(0.5,0.5,tag[2], transform=axlist[2].transAxes)
@@ -201,8 +201,8 @@ def multiple_lineplots(tag, month, title, plot_rmsvd,plot_yield,plot_angle,  par
     axlist[1].text(0.0,0.25,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
     param.set_thresh(100)
     df=pd.read_csv('../data/processed/dataframes/'+month+'_rmsvd_t100'+param.tag+'.csv')
-    total_yield=df['yield'].sum()/1e4/7
-    axlist[1].text(0.0,0.1,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
+    #total_yield=df['yield'].sum()/1e4/7
+   # xlist[1].text(0.0,0.1,'total yield= ' + str(round(total_yield,2)), transform=axlist[1].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag +'_'+title +

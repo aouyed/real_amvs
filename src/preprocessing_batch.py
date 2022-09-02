@@ -27,8 +27,8 @@ for Lambda in [0.15]:
         #main.main(param)
         for thresh in [10]:
             param.set_thresh(thresh)
-            vc.main(param)
-            concatenator.main(param)
+            #vc.main(param)
+            #concatenator.main(param)
             ic.main(param)
             wc.main(param)
             #rp.main(param)

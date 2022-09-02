@@ -69,21 +69,30 @@ def compute(ds, param):
     return ds
 
 def main(param):
-    for date in tqdm(param.dates): 
-        for orbit in ('am','pm'):
-            date=pd.Timestamp(date).to_pydatetime()
-            date_string=date.strftime('%m_%d_%Y')
-
-            ds_unit=xr.open_dataset('../data/processed/tvl1'+
-                    '_lambda_'+str(param.Lambda)+'_'+date_string+'_'+orbit+'.nc')
-            ds_unit=compute(ds_unit, param)
-            ds_unit.to_netcdf('../data/processed/rand'+
-                    '_lambda_'+str(param.Lambda)+'_'+date_string+'_'+orbit+'.nc')
-                
+    for thresh in tqdm((100,10,4)):
+        param.set_alg('tvl1')
+        param.set_thresh(100)
+        file='../data/processed/' + param.tag +'.nc'
+        ds=xr.open_dataset(file)
+        u_wind=ds['u'].values
+        v_wind=ds['v'].values
     
-
-
+        u_random= np.random.uniform(low=-20, high=20, size=u_wind.shape)
+        v_random= np.random.uniform(low=-20, high=20, size=u_wind.shape)
     
+        u_random[u_wind==np.nan]=np.nan
+        v_random[v_wind==np.nan]=np.nan
+        
+        ds['u']=(['plev','time','day',
+                         'latitude','longitude','satellite'], u_random)
+        ds['v']=(['plev','time','day',
+                         'latitude','longitude','satellite'], v_random)
+       
+        
+        param.set_alg('rand')
+        param.set_thresh(thresh)
+        ds=compute_error(ds, thresh)
+        ds.to_netcdf('../data/processed/'+param.tag+'.nc')
     
 if __name__=="__main__":
     param= parameters()
