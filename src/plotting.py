@@ -50,7 +50,6 @@ dt_sec=240*ds['lon_coor']
 dt=dt_sec.values.astype('timedelta64[s]')
 obs_time=start.values + dt
 ds['obs_time']=(['lat','lon'], obs_time)
-breakpoint()
 
 
 calc.map_plotter(ds, 'spec_hum','spec_hum', units_label='cm/s', vmin=0, vmax=0)

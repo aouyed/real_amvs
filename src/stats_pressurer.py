@@ -227,17 +227,17 @@ def threshold_fun(param):
 def main(param):
     param.set_month(datetime(2020,1,1))
     rmsvds=threshold_fun(param)
-    multiple_lineplots(['(a)','(b)','(c)'],'january','angle_january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param, rmsvds)
+    multiple_lineplots(['(a)','(b)'],'january','angle_january_pressure_plots', plot_rmsvd,plot_yield,plot_angle, param, rmsvds)
     param.set_month(datetime(2020,7,1))
     rmsvds=threshold_fun(param)
-    multiple_lineplots(['(d)','(e)','(f)'],'july','angle_july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
+    multiple_lineplots(['(c)','(d)'],'july','angle_july_pressure_plots', plot_rmsvd,plot_yield, plot_angle, param, rmsvds)
 
 
 
 if __name__ == '__main__':
     param=parameters()
     param.set_plev_coarse(5) 
-    param.set_alg('tvl1')
+    param.set_alg('rand')
     param.set_timedelta(6)
     param.set_Lambda(0.15)
     main(param)

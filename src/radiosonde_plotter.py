@@ -182,12 +182,13 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
     
 
 def scatter_plot_cartopy(ax, title, x, y):
-    gl=ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
-    gl.xlabels_top = False
-    gl.ylabels_right=False
     ax.coastlines()
     ax.scatter(x,y,s=20)
-    return ax
+    ax.set_xlim(-180,180)
+    ax.set_ylim(-90,90)
+    gl=ax.gridlines(draw_labels=True, x_inline=False, y_inline=False)
+
+    return ax, gl 
 
 
         
@@ -198,17 +199,17 @@ def scatter_plot_cartopy(ax, title, x, y):
 def four_panel_plot(fname, param, var1='rmsvd', var2='angle', 
                      xlabel1='RMSVD [m/s]', 
                      xlabel2='Angle [deg]',xlim1=(0,15), xlim2=(10,60)):
-    fig, axes = plt.subplots(nrows=2, ncols=2)
+    fig, axes = plt.subplots(nrows=1, ncols=2)
     axlist = axes.flat
     
     two_radiosonde_panels(axlist[:2],var1,xlabel1,xlim1,param)
-    two_radiosonde_panels(axlist[2:], var2,xlabel2,xlim2,param)
+    #two_radiosonde_panels(axlist[2:], var2,xlabel2,xlim2,param)
     axlist[0].legend(frameon=False, loc='upper left')
     
     axlist[0].text(0.05,0.05,'(a)',transform=axlist[0].transAxes)
     axlist[1].text(0.05,0.05,'(b)',transform=axlist[1].transAxes)
-    axlist[2].text(0.05,0.05,'(c)',transform=axlist[2].transAxes)
-    axlist[3].text(0.05,0.05,'(d)',transform=axlist[3].transAxes)
+    #axlist[2].text(0.05,0.05,'(c)',transform=axlist[2].transAxes)
+    #axlist[3].text(0.05,0.05,'(d)',transform=axlist[3].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag+fname +
@@ -267,11 +268,13 @@ def location_plot(fname, param):
     param.set_month(datetime(2020,1,1))
     df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
     df=preprocess(df)
-    df=df[['stationid','lat_rs','lon_rs','date']].drop_duplicates()
+    df=df[['stationid','lat_rs','lon_rs','date']].drop_duplicates().dropna()
     nstations=df.shape[0]
-    df=df[['stationid','lat_rs','lon_rs']].drop_duplicates()
-    axlist[0]=scatter_plot_cartopy(axlist[0],'rs_coords',df['lon_rs'],df['lat_rs'])
-    axlist[0].text(0.05,0.05,str(nstations),transform=axlist[0].transAxes)
+    df=df[['stationid','lat_rs','lon_rs']].drop_duplicates().dropna()
+    axlist[0], gl=scatter_plot_cartopy(axlist[0],'rs_coords',df['lon_rs'],df['lat_rs'])
+    gl.xlabels_bottom=False
+    gl.ylabels_right=False
+    axlist[0].text(0.05,0.1,str(nstations),transform=axlist[0].transAxes)
     
     param.set_month(datetime(2020,7,1))
     df=pd.read_pickle('../data/processed/dataframes/'+param.month_string+'_winds_rs_model_'+param.tag+'.pkl')
@@ -279,8 +282,10 @@ def location_plot(fname, param):
     df=df[['stationid','lat_rs','lon_rs','date']].drop_duplicates()
     nstations=df.shape[0]
     df=df[['stationid','lat_rs','lon_rs']].drop_duplicates()
-    axlist[1]=scatter_plot_cartopy(axlist[1],'rs_coords',df['lon_rs'],df['lat_rs'])
-    axlist[1].text(0.05,0.05,str(nstations),transform=axlist[1].transAxes)
+    axlist[1], gl=scatter_plot_cartopy(axlist[1],'rs_coords',df['lon_rs'],df['lat_rs'])
+    gl.xlabels_top = False
+    gl.ylabels_right=False
+    axlist[1].text(0.05,0.1,str(nstations),transform=axlist[1].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/location_'+param.tag+fname +
@@ -369,7 +374,7 @@ def main(param):
 
 if __name__=='__main__':
     param=parameters()
-    param.set_alg('rand')
+    param.set_alg('tvl1')
     param.set_Lambda(0.15)
     param.set_month(datetime(2020,7,1))
     param.set_timedelta(6)

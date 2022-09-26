@@ -116,11 +116,11 @@ def multiple_quiver(letters, ds, title, geodesic, xlabel,thresh,  tag='',qkey=5,
     axlist[0]=quiver_ax(axlist[0],ds, title, 'u'+tag, 'v'+tag,xlabel, qkey, units)
     axlist[0].set_xlabel(geodesic[2])
     axlist[0].set_ylabel('Pressure [hPa]')
-    axlist[0].text(-0.1,0.5,letters[0],  transform=axlist[0].transAxes)    
+    axlist[0].text(0.02,0.85,letters[0],  transform=axlist[0].transAxes)    
   
                
     axlist[1]=quiver_ax(axlist[1],ds, title+'_era5','u'+tag+'_era5','v'+tag+'_era5',xlabel, qkey, units)
-    axlist[1].text(-0.1,0.5,letters[1],  transform=axlist[1].transAxes)    
+    axlist[1].text(0.02,0.85,letters[1],  transform=axlist[1].transAxes)    
     axlist[0].text(0.8,1.1,'δ = ' + thresh + ' m/s', transform=axlist[0].transAxes)
     rmsvd=np.sqrt(sc.weighted_mean_cross(ds['squared_error']))
     axlist[0].text(0.4,1.1, 'RMSVD = '  + str(round(rmsvd, 2))+ ' m/s',

@@ -50,16 +50,16 @@ def ax_compute(ax,var,edges,ds, df, letter, alg, is_amv):
 
 
 def multiple_panel_hist(label, ds_rand,ds_tvl1, df_rand, df_tvl1):
-    fig, axes = plt.subplots(nrows=3, ncols=2)
+    fig, axes = plt.subplots(nrows=2, ncols=1)
     axlist = axes.flat
     im=ax_compute(axlist[0],'speed',[0,30],ds_tvl1,df_tvl1,'(a)','AMV', True)
     ax_compute(axlist[1],'speed',[0,30],ds_rand,df_rand,'(b)','rand', False)
     
-    ax_compute(axlist[2],'u',[-15,15],ds_tvl1,df_tvl1,'(c)','AMV', True)
-    ax_compute(axlist[3],'u',[-15,15],ds_rand,df_rand,'(d)','rand', False)
+    #ax_compute(axlist[2],'u',[-15,15],ds_tvl1,df_tvl1,'(c)','AMV', True)
+    #ax_compute(axlist[3],'u',[-15,15],ds_rand,df_rand,'(d)','rand', False)
     
-    ax_compute(axlist[4],'v',[-15,15],ds_tvl1,df_tvl1,'(e)','AMV', True)
-    ax_compute(axlist[5],'v',[-15,15],ds_rand,df_rand,'(f)','rand', False)
+    #ax_compute(axlist[4],'v',[-15,15],ds_tvl1,df_tvl1,'(e)','AMV', True)
+    #ax_compute(axlist[5],'v',[-15,15],ds_rand,df_rand,'(f)','rand', False)
     cbar_ax = fig.add_axes([0.12, -0.07, 0.77, 0.05])
     fig.colorbar(im, cax=cbar_ax, orientation='horizontal', label='percent')
     
