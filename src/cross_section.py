@@ -232,8 +232,8 @@ def cross_sequence(ds, thresh, time, param):
         xlabel=geodesic[2]
         cross = cross_section(data, start, end, interp_type='nearest').set_coords(('latitude', 'longitude'))
         cross=cross.reindex(plev=list(reversed(cross.plev)))
-        multiple_quiver(['(a)','(b)'],cross, param.month_string+'_quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
-        multiple_quiver(['(c)','(d)'],cross, param.month_string+'_quiver_'+time+ '_'+geokey+tag+'_noinset', geodesic, xlabel, str(thresh), qkey=5,inset=False)
+        multiple_quiver(['(a)','(b)'],cross, param.tag+'_quiver_'+time+ '_'+geokey+tag, geodesic, xlabel, str(thresh), qkey=5)
+        multiple_quiver(['(c)','(d)'],cross, param.tag+'_quiver_'+time+ '_'+geokey+tag+'_noinset', geodesic, xlabel, str(thresh), qkey=5,inset=False)
 
 
     

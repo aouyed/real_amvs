@@ -15,7 +15,6 @@ import era5_downloader as ed
 from datetime import datetime 
 import config as c
 from tqdm import tqdm
-import plotter
 
 swath_hours=24
 
@@ -77,7 +76,9 @@ def calculate_corr():
     ds=xr.open_dataset('../data/processed/ratio.nc')
     u_error=ds['u']-ds['u_era5']
     v_error=ds['v']-ds['v_era5']
-    print(ds['ratio'].max())
+    print(ds['ratio'].mean())
+    print(ds['ratio'].std())
+
     ds['error_mag']=np.sqrt(u_error**2+v_error**2)
     print(xr.corr(ds.ratio,ds.error_mag)**2)
         

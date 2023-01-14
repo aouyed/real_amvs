@@ -69,17 +69,17 @@ def main():
     start_date=c.MONTH
     end_date=c.MONTH + timedelta(days=6)
     days=ac.daterange(start_date, end_date, 24)
-    for date in days:
+    for date in [days[0]]:
         downloader(date)
         print(date)
         year = date.strftime('%Y')
         month = date.strftime('%m')
         day  = date.strftime('%d') 
-        ds=xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
-        ds=ds[['u','v']].coarsen(latitude=4, longitude=4, boundary='trim').mean()
+        #ds=xr.open_dataset('../data/interim/model_'+month+'_'+day+'_'+year+'.nc')
+        #ds=ds[['u','v']].coarsen(latitude=4, longitude=4, boundary='trim').mean()
         print(ds)
-        ds.to_netcdf('../data/interim/coarse_model_'+month+'_'+day+'_'+year+'.nc')
-        fsa.model_closer(date)
+        #ds.to_netcdf('../data/interim/fine_model_'+month+'_'+day+'_'+year+'.nc')
+        #fsa.model_closer(date)
 
      
         
