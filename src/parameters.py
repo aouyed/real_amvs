@@ -14,6 +14,8 @@ class parameters:
         self.tag=None
         self.dates=None 
         self.alg='tvl1'
+        self.coll_dt=1.5
+        self.coll_dx=1
         self.timedelta=6
         self.Lambda=0.15
         self.plev_coarse=5

@@ -36,6 +36,9 @@ def df_calculator(df, df_s, df_m, lat, lon, lat_rs,lon_rs):
     df['lon'] = lon
     df['lat_rs'] = lat_rs
     df['lon_rs'] = lon_rs
+    df['lat_coarse_era5']=df_m['latitude']
+    df['lon_coarse_era5']=df_m['longitude']
+
     df['date_amv'] = df_s['obs_time']
     df['deltat'] = abs(df['date']-df['date_amv'])
     df['plev'] = df_s['plev']
@@ -61,9 +64,9 @@ def collocated_winds(df, param):
         if os.path.isfile(fname):
             df_rs=pd.read_pickle(fname)
             df_rs=df_rs.reset_index()
-            if obs_time.hour >= (24-HOURS):
+            if obs_time.hour >= (24-param.coll_dt):
                 date=datetime(obs_time.year,obs_time.month, obs_time.day+1,0)
-            elif obs_time.hour<= HOURS:
+            elif obs_time.hour<= param.coll_dt:
                 date=datetime(obs_time.year,obs_time.month, obs_time.day,0)
             else:
                 date=datetime(obs_time.year,obs_time.month, obs_time.day,12)
@@ -85,20 +88,24 @@ def collocated_winds(df, param):
                 ds_model=xr.open_dataset('../data/interim/coarse_model_' + dsdate+'.nc')
                 ds_model = ds_model.assign_coords(longitude=(((ds_model.longitude + 180) % 360) - 180))
                 ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
-               
                 df_rs=collocated_pressure_list(df_rs, ds['plev'].values)
                 #ds_total=wct.ds_test(tag, orbit, obs_time,df_rs, lat, lon)
 
                 ds=ds.sel(latitude=lat,longitude=lon, plev=df_rs['plev'].values, method='nearest')   
-                ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
-                    level=df_rs['plev'].values,  method='nearest')
-               
+                #ds_model= ds_model.sel(latitude=lat, longitude=lon, time=obs_time,
+                 #   level=df_rs['plev'].values,  method='nearest')
+                
+                
+                ds_model= ds_model.sel(latitude=lat_rs, longitude=lon_rs, time=df_rs['date'].values[0],
+                   level=df_rs['plev'].values,  method='nearest')
+                
                 df_s=ds.to_dataframe().reset_index()
                 if obs_time not in df_s['obs_time'].values:
                     breakpoint()
                 df_m=ds_model.to_dataframe().reset_index()
 
                 df_rs=df_calculator(df_rs, df_s, df_m, lat, lon, lat_rs, lon_rs)
+                breakpoint()
                 if df_total.empty:
                     df_total=df_rs
                 else:

@@ -67,18 +67,18 @@ def space_time_collocator(days, deltat, param):
     df=df.drop_duplicates()
     return df
         
-def collocate_igra(stations, lat, lon):
+def collocate_igra(stations, lat, lon, param):
 
     
-    condition1=stations['lat'].between(lat-1,lat+1)
-    condition2=stations['lon'].between(lon-1,lon+1)
+    condition1=stations['lat'].between(lat-param.coll_dx,lat+param.coll_dx)
+    condition2=stations['lon'].between(lon-param.coll_dx,lon+param.coll_dx)
     condition3=condition1 & condition2
     condition4=stations['end'] >=2020
     stations=stations.loc[condition3 & condition4]
     return stations
     
     
-def collocated_igra_ids(df):
+def collocated_igra_ids(df, param):
      df=df.reset_index(drop=True)
      start_time = time.time()
      stations = igra.download.stationlist('/tmp')
@@ -86,7 +86,7 @@ def collocated_igra_ids(df):
      station_dict={'lat':[],'lon':[],'lon_rs':[],'lat_rs':[],'stationid':[],'obs_time':[],'orbit':[]}
      for latlon in tqdm(df.values):
          lat,lon,obs_time, orbit = latlon
-         df_unit=collocate_igra(stations, lat, lon)
+         df_unit=collocate_igra(stations, lat, lon, param)
          if not df_unit.empty:
              
              ids=df_unit.index.values.tolist()
@@ -120,6 +120,7 @@ def igra_downloader(df,days, month_string):
         
     station_list=np.unique(df['stationid'].values)
     for station in tqdm(station_list):
+
         fname=PATH+month_string+'_' +station+'.pkl'
         if not os.path.isfile(fname):
             df_total=pd.DataFrame()
@@ -171,14 +172,14 @@ def igra_downloader(df,days, month_string):
 
 
 def main(param):
-    deltat=timedelta(hours=HOURS)
+    deltat=timedelta(hours=param.coll_dt)
     start_date=param.month
     days=param.dates
     month_string=param.month_string
     df=space_time_collocator(days, deltat, param)
     df=df.reset_index(drop=True)
     df=df.drop_duplicates()
-    df=collocated_igra_ids(df)
+    df=collocated_igra_ids(df,param)
     df.to_pickle('../data/interim/dataframes/'+param.tag+'_igra_id.pkl')
     df=pd.read_pickle('../data/interim/dataframes/'+param.tag+'_igra_id.pkl')
     print(df)

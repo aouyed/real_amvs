@@ -14,7 +14,7 @@ import cartopy.crs as ccrs
 from parameters import parameters 
 from datetime import datetime 
 
-THRESHOLDS=[10]
+THRESH=10
 TAGS=[['filtered_thick_plev_tlv1',10],['filtered_4_thick_plev_tlv1',4]]
 def scatter(x,y):
     fig, ax=plt.subplots()
@@ -144,18 +144,18 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
 
 
 
-    
-    for thresh in THRESHOLDS:
-        param.set_thresh(thresh)
-        df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
-        df_unit=preprocess(df_unit)
-        #n_points=df[['lat_rs','lon_rs','stationid','date']].drop_duplicates().dropna().shape[0]
-        n_points=df_unit[['lat_rs','lon_rs','lat','lon','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
-        df_pressure= pressure_df(df_unit)
-        df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')
-        means=df_pressure[rmsvd_label].mean()
-        ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
-        ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
+    thresh=THRESH
+    param.set_thresh(thresh)
+    df_unit=pd.read_pickle('../data/processed/dataframes/'+month_string+'_winds_rs_model_'+ param.tag +'.pkl')
+    df_unit=preprocess(df_unit)
+    #n_points=df[['lat_rs','lon_rs','stationid','date']].drop_duplicates().dropna().shape[0]
+    n_points=df_unit[['lat_rs','lon_rs','lat','lon','stationid','u_wind','v_wind','u','v','plev','date_amv']].drop_duplicates().dropna().shape[0]
+    df_pressure= pressure_df(df_unit)
+    df_pressure.round(2).to_csv('../data/processed/df_pressure_'+param.tag+'.csv')
+    means=df_pressure[rmsvd_label].mean()
+    means_era5=df_pressure['rmsvd_era5'].mean()
+    ax.plot(df_pressure[rmsvd_label], df_pressure.plev, label='δ = '+str(thresh)+' m/s')
+    ax.plot(df_pressure_era[rmsvd_label+'_era5'], df_pressure_era.plev, label='ERA 5')
     if (rmsvd_label=='rmsvd'):
         ax.axvspan(5.93, 8.97, alpha=0.25, color='grey')  
     if (rmsvd_label=='speed_bias'):
@@ -166,8 +166,12 @@ def pressure_ax(ax,  param,rmsvd_label,xlabel, xlim):
         
     ax.text(0.6,0.05,'N = '+str(n_points),transform=ax.transAxes)
     mean_string=str(round(means,2))
+    mean_string_era5=str(round(means_era5,2))
+
     if rmsvd_label=='rmsvd':
         ax.text(0.5, 0.25,'RMSVD = '+ mean_string,transform=ax.transAxes)
+        ax.text(0.5, 0.1,'RMSVD_ERA5 = '+ mean_string_era5,transform=ax.transAxes)
+
     else:
         ax.text(0.7, 0.25,'μ = '+ mean_string,transform=ax.transAxes)
 
@@ -199,17 +203,17 @@ def scatter_plot_cartopy(ax, title, x, y):
 def four_panel_plot(fname, param, var1='rmsvd', var2='angle', 
                      xlabel1='RMSVD [m/s]', 
                      xlabel2='Angle [deg]',xlim1=(0,15), xlim2=(10,60)):
-    fig, axes = plt.subplots(nrows=1, ncols=2)
+    fig, axes = plt.subplots(nrows=2, ncols=2)
     axlist = axes.flat
     
     two_radiosonde_panels(axlist[:2],var1,xlabel1,xlim1,param)
-    #two_radiosonde_panels(axlist[2:], var2,xlabel2,xlim2,param)
+    two_radiosonde_panels(axlist[2:], var2,xlabel2,xlim2,param)
     axlist[0].legend(frameon=False, loc='upper left')
     
     axlist[0].text(0.05,0.05,'(a)',transform=axlist[0].transAxes)
     axlist[1].text(0.05,0.05,'(b)',transform=axlist[1].transAxes)
-    #axlist[2].text(0.05,0.05,'(c)',transform=axlist[2].transAxes)
-    #axlist[3].text(0.05,0.05,'(d)',transform=axlist[3].transAxes)
+    axlist[2].text(0.05,0.05,'(c)',transform=axlist[2].transAxes)
+    axlist[3].text(0.05,0.05,'(d)',transform=axlist[3].transAxes)
 
     fig.tight_layout()
     plt.savefig('../data/processed/plots/'+param.tag+fname +
@@ -321,17 +325,17 @@ def preprocess(df):
     df['u_error']= udiff
     df['v_error']= vdiff
     df['speed']=np.sqrt(df.u**2+df.v**2)
-    df['speed_era5']=np.sqrt(df.u_era5**2+df.v_era5**2)
+    df['speed_era5']=np.sqrt(df.u_coarse_era5**2+df.v_coarse_era5**2)
     df['speed_wind']=np.sqrt(df.u_wind**2+df.v_wind**2)
     df['speed_error']=df.speed-df.speed_wind
     
     df['speed_error_era5']=df.speed_era5-df.speed_wind
-    df['u_error_era5']=df.u_era5-df.u_wind
-    df['v_error_era5']=df.v_era5-df.v_wind
+    df['u_error_era5']=df.u_coarse_era5-df.u_wind
+    df['v_error_era5']=df.v_coarse_era5-df.v_wind
 
-    df['error_mag']=np.sqrt((df.u-df.u_era5)**2+(df.v-df.v_era5)**2)
+    #df['error_mag']=np.sqrt((df.u-df.u_coarse_era5)**2+(df.v-df.v_coarse_era5)**2)
     df['error_square']=udiff**2+vdiff**2
-    df['error_square_era5']=(df.u_wind-df.u_era5)**2+(df.v_wind-df.v_era5)**2
+    df['error_square_era5']=(df.u_wind-df.u_coarse_era5)**2+(df.v_wind-df.v_coarse_era5)**2
     df=angle(df, 'u','v','signed_angle')
     df=angle(df, 'u_era5','v_era5','signed_angle_era5')
     df['angle']=abs(df['signed_angle'])

@@ -17,11 +17,19 @@ import radiosonde_plotter as rp
 import cross_section as cc
 import stats_pressurer as sp
 param= parameters()
-param.set_alg('rand')
-param.set_plev_coarse(5)
+param.set_alg('tvl1')
 param.set_timedelta(6)
+#param.coll_dt=2
+#param.coll_dx=3
 
-rp.main(param)
-cc.main(param)
-sp.main(param)
-            
+param.coll_dt=1.5
+param.coll_dx=1
+
+for date in (datetime(2020,7,1),datetime(2020,1,1)):
+    param.set_month(date)
+    #ic.main(param)
+    wc.main(param)
+    rp.main(param)
+    cc.main(param)
+    #sp.main(param)
+                

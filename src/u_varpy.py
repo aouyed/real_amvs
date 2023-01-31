@@ -99,8 +99,8 @@ print(ds['level'].values)
 
 ds=ds.sel(level=slice(200, 900))
 
-u_min=ds['u'].coarsen(longitude=4, latitude=4, time=2, level=2, boundary='trim').quantile(0.2)
-u_max=ds['u'].coarsen(longitude=4, latitude=4, time=2, level=2, boundary='trim').quantile(0.8)
+u_min=ds['v'].coarsen(longitude=4, latitude=4, time=2, level=1, boundary='trim').min()
+u_max=ds['v'].coarsen(longitude=4, latitude=4, time=2, level=1, boundary='trim').max()
 
 diff=u_max-u_min
 
