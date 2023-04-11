@@ -192,8 +192,8 @@ class amv_calculator:
     
   
     def flow_calculator(self, ds_snpp, ds_j1, ds_merged):
-        frame0=self.frame_retreiver_ns(ds_j1)
-        frame=self.frame_retreiver_ns(ds_snpp)
+        frame0=self.frame_retreiver(ds_j1)
+        frame=self.frame_retreiver(ds_snpp)
         flowx,flowy=self.calc(frame0, frame)
         flowx = np.expand_dims(flowx, axis=2)
         flowy = np.expand_dims(flowy, axis=2)

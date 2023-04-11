@@ -136,7 +136,7 @@ def main_figure(param, time):
         two_panels('test_'+time+'_'+day_string+'_'+param.tag,ds)
         
 def main():
-    ds=xr.open_dataset('../data/processed/test.nc')
+    ds=xr.open_dataset('../data/processed/test_nn.nc')
     ds=vc.vertical_coarse(ds,10, 5)
     ds=ds.sel(plev=850, method='nearest')
     ds=compute(ds)
@@ -145,10 +145,10 @@ def main():
     #ds=ds.where(ds.error_mag<10)
     print(np.sqrt(ds['error_squared'].mean().item()))
 
-    ds=ds.sel(satellite='snpp')
+    ds=ds.sel(satellite='j1')
     #ds=ds.drop('time')
-    quiver_plot_cartopy(ds, 'test', 'u', 'v')
-    quiver_plot_cartopy(ds, 'test_era5', 'u_era5', 'v_era5')
+    quiver_plot_cartopy(ds, 'test_nn', 'u', 'v')
+    quiver_plot_cartopy(ds, 'test_era5_nn', 'u_era5', 'v_era5')
 
     #three_panels('three_panel')
 if __name__ == '__main__':

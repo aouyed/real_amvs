@@ -27,5 +27,5 @@ ds_model=ds_model.reindex(longitude=np.sort(ds_model['longitude'].values))
 
 ac=amv_calculator(ds_snpp, ds_j1, ds_model)
 ds=ac.ds_amv
-ds.to_netcdf('../data/processed/test.nc')
+ds.to_netcdf('../data/processed/test_nn.nc')
 breakpoint()
