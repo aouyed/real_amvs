@@ -30,7 +30,7 @@ def vertical_coarse(ds, thresh, n_layers):
     obs_array=ds['obs_time'].sel(plev=850, method='nearest')
     obs_array=obs_array.values 
     obs_array=np.squeeze(obs_array)
-    ds_c['obs_time']=(['latitude','longitude','satellite'], obs_array)
+    #ds_c['obs_time']=(['latitude','longitude','satellite'], obs_array)
     return ds_c
 
 

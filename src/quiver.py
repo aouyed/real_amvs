@@ -16,6 +16,7 @@ import matplotlib.ticker as mticker
 from scipy import fftpack, ndimage
 from parameters import parameters 
 from tqdm import tqdm 
+import vertical_coarsening as vc
 
 def quiver_plot(ds, title, u, v):
     #ds=ds.coarsen(latitude=5, longitude=5, boundary='trim').mean()
@@ -114,12 +115,12 @@ def compute(ds):
     #ds=xr.open_dataset('../dad='nearest')
     #ds=ds.sel(plev=850, method='nearest')
 
-    ds=ds.drop('obs_time')
+    #ds=ds.drop('obs_time')
     #ds=ds.rolling(latitude=10, longitude=10).median()
     ds['u_error']=ds.u-ds.u_era5
     ds['v_error']=ds.v-ds.v_era5
     ds['error_squared']=ds.u_error**2+ds.v_error**2
-    ds['error_mag']=np.sqrt(ds.error_squared)
+   # ds['error_mag']=np.sqrt(ds.error_squared)
     #ds=ds.sel(longitude=slice(-34,-6),latitude=slice(-30,-43))
     return ds     
 
@@ -134,24 +135,22 @@ def main_figure(param, time):
         ds=ds.sel(satellite='snpp')
         two_panels('test_'+time+'_'+day_string+'_'+param.tag,ds)
         
-def main(param, time):
-    ds_total=xr.open_dataset('../data/processed/'+param.tag+'.nc')
-    dates=param.dates
-    for day in tqdm(dates[:2]):
-        day_string=day.strftime('%Y_%m_%d')
-        ds=ds_total.sel(day=day, time=time)
-        ds=ds.sel(plev=850, method='nearest')
-        #ds=ds.sel(longitude=slice(-7,27),latitude=slice(30,-25))
-        ds=ds.sel(satellite='snpp')
-        quiver_plot_cartopy(ds, 'test', 'u', 'v')
-        quiver_plot_cartopy(ds, 'test_era5', 'u_era5', 'v_era5')
+def main():
+    ds=xr.open_dataset('../data/processed/test.nc')
+    ds=vc.vertical_coarse(ds,10, 5)
+    ds=ds.sel(plev=850, method='nearest')
+    ds=compute(ds)
+
+    print(np.sqrt(ds['error_squared'].mean().item()))
+    #ds=ds.where(ds.error_mag<10)
+    print(np.sqrt(ds['error_squared'].mean().item()))
+
+    ds=ds.sel(satellite='snpp')
+    #ds=ds.drop('time')
+    quiver_plot_cartopy(ds, 'test', 'u', 'v')
+    quiver_plot_cartopy(ds, 'test_era5', 'u_era5', 'v_era5')
 
     #three_panels('three_panel')
 if __name__ == '__main__':
-    param=parameters()
-    param.set_Lambda(0.15)
-    param.set_plev_coarse(5)
-    param.set_alg('tvl1')
-    param.set_timedelta(6)
-    main(param,'pm')
+    main()
 

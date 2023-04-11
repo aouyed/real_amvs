@@ -33,10 +33,10 @@ swath_hours=24
 class amv_calculator:
     
     def __init__(self, ds_snpp, ds_j1, ds_era5):
-        ds_snpp=ds_snpp 
-        ds_j1=ds_j1
-        ds_era5=ds_era5 
-        ds_amvs= self.ds_calculator(ds_snpp, ds_j1, ds_era5)
+        self.ds_snpp=ds_snpp 
+        self.ds_j1=ds_j1
+        self.ds_era5=ds_era5 
+        self.ds_amv= self.ds_calculator(ds_snpp, ds_j1, ds_era5)
         
     
     def ds_calculator(self, ds_snpp, ds_j1, ds_model):
@@ -134,7 +134,7 @@ class amv_calculator:
         return data[tuple(ind)]
     
     
-    def drop_nan(frame):
+    def drop_nan(self, frame):
         mask=np.isnan(frame)
         mask = np.uint8(mask)
         frame = np.nan_to_num(frame)
@@ -150,6 +150,17 @@ class amv_calculator:
         frame=self.fill(frame)
         return frame
   
+    def frame_retreiver_ns(self, ds):
+        frame= np.squeeze(ds[LABEL].values)  
+        #plt.imshow(frame)
+        #plt.show()
+        #plt.close()
+        #frame=np.nan_to_num(frame)
+        frame=self.drop_nan(frame)
+        #plt.imshow(frame)
+        #plt.show()
+        #plt.close()
+        return frame
 
     
     
@@ -181,8 +192,8 @@ class amv_calculator:
     
   
     def flow_calculator(self, ds_snpp, ds_j1, ds_merged):
-        frame0=self.frame_retreiver(ds_j1)
-        frame=self.frame_retreiver(ds_snpp)
+        frame0=self.frame_retreiver_ns(ds_j1)
+        frame=self.frame_retreiver_ns(ds_snpp)
         flowx,flowy=self.calc(frame0, frame)
         flowx = np.expand_dims(flowx, axis=2)
         flowy = np.expand_dims(flowy, axis=2)
