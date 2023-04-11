@@ -40,13 +40,18 @@ class amv_calculator:
         
     
     def ds_calculator(self, ds_snpp, ds_j1, ds_model):
+            ds_total=xr.Dataset()
    
             for pressure in tqdm(ds_snpp['plev'].values):
                 ds_snpp_unit=ds_snpp.sel(plev=pressure)
                 ds_j1_unit=ds_j1.sel(plev=pressure)
+                
+                ds_snpp_unit=ds_snpp_unit.drop('plev')
+                ds_j1_unit=ds_j1_unit.drop('plev')
+
                 ds_model_unit=ds_model.sel(level=pressure, method='nearest')
 
-                ds_unit = self.ds_unit_calc(ds_snpp_unit, ds_j1_unit, ds_model)
+                ds_unit = self.ds_unit_calc(ds_snpp_unit, ds_j1_unit, ds_model_unit)
                 ds_unit = ds_unit.expand_dims('plev').assign_coords(plev=np.array([pressure]))
         
                 if not ds_total:
@@ -63,21 +68,22 @@ class amv_calculator:
     def ds_unit_calc(self, ds_snpp, ds_j1, ds_model):
         ds=self.prepare_ds(ds_snpp)
         df=ds.to_dataframe()
+        df=df.set_index('satellite',append=True)
         swathes=self.swath_initializer(ds,5,swath_hours)
         for swath in swathes:
             start=swath[0]
             end=swath[1]
-            ds_merged, ds_snpp, ds_j1, df_snpp=self.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
+            ds_merged,df_snpp=self.prepare_patch(ds_snpp, ds_j1, ds_model, start, end)
        
             if (df_snpp.shape[0]>100):
-                df, ds_snpp_p,ds_j1_p, ds_model_p=self.amv_calculator(ds_merged, df,param)
+                df =self.amv_calc(ds_merged, df)
                          
         ds=xr.Dataset.from_dataframe(df)
        
         return ds   
     
     def prepare_patch(self, ds_snpp, ds_j1, ds_model, start, end):
-        breakpoint()
+        print(start)
         ds_j1=ds_j1.where((ds_j1.obs_time >= start) & (ds_j1.obs_time <= end))
         model_t=start+np.timedelta64(25, 'm')
         start=start+np.timedelta64(50, 'm')
@@ -102,10 +108,10 @@ class amv_calculator:
         ds_model=ds_model.drop('time')
         ds_merged=xr.merge([ds_merged, ds_model])
         
-        return ds_merged, ds_snpp, ds_j1, df_snpp
+        return ds_merged, df_snpp
     
 
-    def fill(data, invalid=None):
+    def fill(self, data, invalid=None):
         """
         (algorithm created by Juh_:https://stackoverflow.com/users/1206998/juh)
         Replace the value of invalid 'data' cells (indicated by 'invalid') 
@@ -136,40 +142,14 @@ class amv_calculator:
         frame = cv2.inpaint(frame, mask, inpaintRadius=10, flags=cv2.INPAINT_NS)
         return frame
 
-    def calc(self,frame0, frame, Lambda, alg):
-        if frame0.shape != frame.shape:
-            frame=np.resize(frame, frame0.shape)
-        
-        
-        nframe0 = cv2.normalize(src=frame0, dst=None,
-                                alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-        nframe = cv2.normalize(src=frame, dst=None,
-                                alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
-        
-        
-        if alg=='deepflow':
-            optical_flow=cv2.optflow.createOptFlow_DeepFlow() 
-        else:
-            optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
     
-    
-        flowd = optical_flow.calc(nframe0, nframe, None)
-        flowx=flowd[:,:,0]
-        flowy=flowd[:,:,1]
-         
-        return flowx, flowy
      
-    def frame_retreiver(ds):
+    def frame_retreiver(self,ds):
         ds_inpaint=ds
         frame= np.squeeze(ds[LABEL].values)
-        frame=fill(frame)
+        frame=self.fill(frame)
         return frame
-        
-    def frame_retreiver_ns(ds):
-        frame= np.squeeze(ds[LABEL].values)  
-        frame=self.drop_nan(frame)
-        return frame
-    
+  
 
     
     
@@ -200,10 +180,10 @@ class amv_calculator:
         
     
   
-    def flow_calculator(ds_snpp, ds_j1, ds_merged):
-        frame0=frame_retreiver_ns(ds_j1)
-        frame=frame_retreiver_ns(ds_snpp)
-        flowx,flowy=calc(frame0, frame, param.Lambda, param.alg)
+    def flow_calculator(self, ds_snpp, ds_j1, ds_merged):
+        frame0=self.frame_retreiver(ds_j1)
+        frame=self.frame_retreiver(ds_snpp)
+        flowx,flowy=self.calc(frame0, frame)
         flowx = np.expand_dims(flowx, axis=2)
         flowy = np.expand_dims(flowy, axis=2)
         ds_snpp['flowx']=(['latitude','longitude','satellite'],flowx)
@@ -231,7 +211,27 @@ class amv_calculator:
         ds_j1['v']= scale_y*ds_merged['dt_inv']*ds_j1['flowy']
         return ds_snpp, ds_j1
     
-    def df_filler(df, df_sat):
+    def calc(self,frame0, frame):
+        if frame0.shape != frame.shape:
+            frame=np.resize(frame, frame0.shape)
+        
+        
+        nframe0 = cv2.normalize(src=frame0, dst=None,
+                                alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+        nframe = cv2.normalize(src=frame, dst=None,
+                                alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
+        
+     
+        optical_flow=cv2.optflow.DualTVL1OpticalFlow_create()
+    
+    
+        flowd = optical_flow.calc(nframe0, nframe, None)
+        flowx=flowd[:,:,0]
+        flowy=flowd[:,:,1]
+         
+        return flowx, flowy
+    
+    def df_filler(self,df, df_sat):
         swathi=df_sat.index.values 
         df['humidity_overlap'].loc[df.index.isin(swathi)]=df_sat['specific_humidity_mean']
         df['flowx'].loc[df.index.isin(swathi)]=df_sat['flowx']
@@ -241,7 +241,7 @@ class amv_calculator:
         df['dt_inv'].loc[df.index.isin(swathi)]=df_sat['dt_inv']
         return df
     
-    def df_filler_model(df, df_sat, df_m):
+    def df_filler_model(self, df, df_sat, df_m):
         swathi=df_sat.index.values 
         df['u_era5'].loc[df.index.isin(swathi)]=df_m['u']
         df['v_era5'].loc[df.index.isin(swathi)]=df_m['v']
@@ -249,22 +249,22 @@ class amv_calculator:
         return df
         
     
-    def amv_calculator(ds_merged, df, param):
+    def amv_calc(self, ds_merged, df):
         ds_snpp=ds_merged.loc[{'satellite':'snpp'}].expand_dims('satellite')
         ds_j1=ds_merged.loc[{'satellite':'j1'}].expand_dims('satellite')
-        ds_snpp, ds_j1=flow_calculator(ds_snpp, ds_j1, ds_merged, param)
+        ds_snpp, ds_j1=self.flow_calculator(ds_snpp, ds_j1, ds_merged)
         df_j1=ds_j1.to_dataframe()
         df_snpp=ds_snpp.to_dataframe()
         df_model=ds_merged.loc[{'satellite':'snpp'}].drop('satellite').to_dataframe().dropna()   
         
         df_snpp=df_snpp.reorder_levels(['latitude','longitude','satellite']).sort_index()
         df_j1=df_j1.reorder_levels(['latitude','longitude','satellite']).sort_index()
-        df=df_filler(df, df_snpp)
-        df=df_filler(df, df_j1)
-        df=df_filler_model(df, df_j1, df_model)
-        df=df_filler_model(df, df_snpp, df_model)
+        df=self.df_filler(df, df_snpp)
+        df=self.df_filler(df, df_j1)
+        df=self.df_filler_model(df, df_j1, df_model)
+        df=self.df_filler_model(df, df_snpp, df_model)
         
-        return df, ds_snpp, ds_j1, ds_merged
+        return df
     
     
 

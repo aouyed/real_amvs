@@ -180,7 +180,6 @@ def flow_calculator(ds_snpp, ds_j1, ds_merged, param):
     dt=ds_merged['obs_time'].loc[
         {'satellite':'snpp'}]-ds_merged['obs_time'].loc[{'satellite':'j1'}]
     dt_int=dt.values.astype('timedelta64[s]').astype(np.int32)
-    breakpoint()
     dt_inv=1/dt_int
     dt_inv[dt_inv==np.inf]=np.nan
     dx_conv=abs(np.cos(np.deg2rad(ds_merged.latitude)))
