@@ -9,14 +9,11 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
 import pandas as pd
-import main as fsa
 from datetime import datetime 
 import cartopy.crs as ccrs
 import matplotlib.ticker as mticker
 from scipy import fftpack, ndimage
-from parameters import parameters 
 from tqdm import tqdm 
-import vertical_coarsening as vc
 
 def quiver_plot(ds, title, u, v):
     #ds=ds.coarsen(latitude=5, longitude=5, boundary='trim').mean()
@@ -117,10 +114,10 @@ def compute(ds):
 
     #ds=ds.drop('obs_time')
     #ds=ds.rolling(latitude=10, longitude=10).median()
-    ds['u_error']=ds.u-ds.u_era5
-    ds['v_error']=ds.v-ds.v_era5
+    ds['u_error']=ds.utrack-ds.u_era5
+    ds['v_error']=ds.vtrack-ds.v_era5
     ds['error_squared']=ds.u_error**2+ds.v_error**2
-   # ds['error_mag']=np.sqrt(ds.error_squared)
+    ds['error_mag']=np.sqrt(ds.error_squared)
     #ds=ds.sel(longitude=slice(-34,-6),latitude=slice(-30,-43))
     return ds     
 
@@ -136,19 +133,23 @@ def main_figure(param, time):
         two_panels('test_'+time+'_'+day_string+'_'+param.tag,ds)
         
 def main():
-    ds=xr.open_dataset('../data/processed/test_nn.nc')
-    ds=vc.vertical_coarse(ds,10, 5)
-    ds=ds.sel(plev=850, method='nearest')
+    ds=xr.open_dataset('../data/processed/test_0.nc')
+    #ds=ds.rename({'u':'utrack','v':'vtrack'})
+    
+    #ds=vc.vertical_coarse(ds,10, 5)
+    #ds=ds.sel(plev=850, method='nearest')
     ds=compute(ds)
+    ds=ds.where(ds.error_mag<10)
 
     print(np.sqrt(ds['error_squared'].mean().item()))
     #ds=ds.where(ds.error_mag<10)
     print(np.sqrt(ds['error_squared'].mean().item()))
 
-    ds=ds.sel(satellite='j1')
+    ds=ds.sel(satellite='snpp')
+    ds=ds.drop(['obs_time','time'])
     #ds=ds.drop('time')
-    quiver_plot_cartopy(ds, 'test_nn', 'u', 'v')
-    quiver_plot_cartopy(ds, 'test_era5_nn', 'u_era5', 'v_era5')
+    quiver_plot_cartopy(ds, 'test_new', 'utrack', 'vtrack')
+    quiver_plot_cartopy(ds, 'test_new', 'u_era5', 'v_era5')
 
     #three_panels('three_panel')
 if __name__ == '__main__':

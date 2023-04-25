@@ -10,7 +10,6 @@ import xarray as xr
 import numpy as np
 import metpy.calc as mpcalc
 from metpy.units import units
-import inpainter 
 from datetime import timedelta
 from scipy import ndimage as nd
 import matplotlib.pyplot as plt
@@ -42,7 +41,7 @@ class amv_calculator:
     def ds_calculator(self, ds_snpp, ds_j1, ds_model):
             ds_total=xr.Dataset()
    
-            for pressure in tqdm(ds_snpp['plev'].values):
+            for pressure in tqdm(ds_snpp['plev'].values[-1:]):
                 ds_snpp_unit=ds_snpp.sel(plev=pressure)
                 ds_j1_unit=ds_j1.sel(plev=pressure)
                 
@@ -66,9 +65,14 @@ class amv_calculator:
         
         
     def ds_unit_calc(self, ds_snpp, ds_j1, ds_model):
-        ds=self.prepare_ds(ds_snpp)
+                
+        ds_snpp_dummy = ds_snpp.expand_dims('satellite').assign_coords(satellite=np.array(['snpp']))
+        ds_j1_dummy = ds_j1.expand_dims('satellite').assign_coords(satellite=np.array(['j1']))
+        ds=xr.concat([ds_snpp_dummy,ds_j1_dummy],'satellite')
+        
+        ds=self.prepare_ds(ds)
         df=ds.to_dataframe()
-        df=df.set_index('satellite',append=True)
+        #df=df.set_index('satellite',append=True)
         swathes=self.swath_initializer(ds,5,swath_hours)
         for swath in swathes:
             start=swath[0]
@@ -83,6 +87,7 @@ class amv_calculator:
         return ds   
     
     def prepare_patch(self, ds_snpp, ds_j1, ds_model, start, end):
+
         print(start)
         ds_j1=ds_j1.where((ds_j1.obs_time >= start) & (ds_j1.obs_time <= end))
         model_t=start+np.timedelta64(25, 'm')
@@ -169,8 +174,8 @@ class amv_calculator:
         ds['humidity_overlap'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
         ds['flowx'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
         ds['flowy'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-        ds['u'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
-        ds['v'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+        ds['utrack'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
+        ds['vtrack'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
         ds['u_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
         ds['v_era5'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
         ds['dt_inv'] = xr.full_like(ds['specific_humidity_mean'], fill_value=np.nan)
@@ -178,8 +183,10 @@ class amv_calculator:
         return ds
     
     def swath_initializer(self, ds, dmins, swath_hours):   
+                        
         number=(swath_hours*60)/dmins
         mind=np.nanmin(ds['obs_time'].values)
+
         times=np.arange(dmins,dmins*number,dmins)
         swathes=[]
         swathes.append([mind, mind+np.timedelta64(dmins, 'm')])
@@ -192,8 +199,8 @@ class amv_calculator:
     
   
     def flow_calculator(self, ds_snpp, ds_j1, ds_merged):
-        frame0=self.frame_retreiver(ds_j1)
-        frame=self.frame_retreiver(ds_snpp)
+        frame0=self.frame_retreiver_ns(ds_j1)
+        frame=self.frame_retreiver_ns(ds_snpp)
         flowx,flowy=self.calc(frame0, frame)
         flowx = np.expand_dims(flowx, axis=2)
         flowy = np.expand_dims(flowy, axis=2)
@@ -214,12 +221,12 @@ class amv_calculator:
     
         
         ds_snpp['dt_inv']= ds_merged['dt_inv'] 
-        ds_snpp['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_snpp['flowx']
-        ds_snpp['v']= scale_y*ds_merged['dt_inv']*ds_snpp['flowy']
+        ds_snpp['utrack']= scale_x*dx_conv*ds_merged['dt_inv']*ds_snpp['flowx']
+        ds_snpp['vtrack']= scale_y*ds_merged['dt_inv']*ds_snpp['flowy']
      
         ds_j1['dt_inv']= ds_merged['dt_inv']        
-        ds_j1['u']= scale_x*dx_conv*ds_merged['dt_inv']*ds_j1['flowx']
-        ds_j1['v']= scale_y*ds_merged['dt_inv']*ds_j1['flowy']
+        ds_j1['utrack']= scale_x*dx_conv*ds_merged['dt_inv']*ds_j1['flowx']
+        ds_j1['vtrack']= scale_y*ds_merged['dt_inv']*ds_j1['flowy']
         return ds_snpp, ds_j1
     
     def calc(self,frame0, frame):
@@ -247,8 +254,8 @@ class amv_calculator:
         df['humidity_overlap'].loc[df.index.isin(swathi)]=df_sat['specific_humidity_mean']
         df['flowx'].loc[df.index.isin(swathi)]=df_sat['flowx']
         df['flowy'].loc[df.index.isin(swathi)]=df_sat['flowy']
-        df['u'].loc[df.index.isin(swathi)]=df_sat['u']
-        df['v'].loc[df.index.isin(swathi)]=df_sat['v']
+        df['utrack'].loc[df.index.isin(swathi)]=df_sat['utrack']
+        df['vtrack'].loc[df.index.isin(swathi)]=df_sat['vtrack']
         df['dt_inv'].loc[df.index.isin(swathi)]=df_sat['dt_inv']
         return df
     
