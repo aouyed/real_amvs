@@ -1,1 +1,2 @@
-# 3d_amvs
+3D winds retrieval code associated with the following paper:
+[Ouyed, A., Smith, N., Zeng, X., Galarneau Jr, T., Su, H., & Dixon, R. D. (2023). Global three‐dimensional water vapor feature‐tracking for horizontal winds using hyperspectral infrared sounder data from overlapped tracks of two satellites. Geophysical Research Letters, 50(7), e2022GL101830.](https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022GL101830)
